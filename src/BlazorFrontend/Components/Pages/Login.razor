@@ -1,0 +1,141 @@
+﻿@page "/login"
+@rendermode InteractiveServer
+@layout BlankLayout
+
+@using System.Net.Http.Json
+@using BlazorFrontend.Services
+@inject IHttpClientFactory HttpClientFactory
+@inject IAuthState AuthState
+@inject NavigationManager Navigation
+
+<div class="d-flex align-items-center justify-content-center min-vh-100 bg-light">
+    <div class="card shadow-sm" style="min-width: 360px; max-width: 420px;">
+        <div class="card-body p-4">
+            <h3 class="card-title text-center mb-4">
+                @(isLoginMode ? "Sign in" : "Create account")
+            </h3>
+
+            <div class="btn-group w-100 mb-4" role="group">
+                <button type="button"
+                        class="btn @(isLoginMode ? "btn-primary" : "btn-outline-primary")"
+                        @onclick="@(() => SwitchMode(true))">
+                    Login
+                </button>
+                <button type="button"
+                        class="btn @(!isLoginMode ? "btn-primary" : "btn-outline-primary")"
+                        @onclick="@(() => SwitchMode(false))">
+                    Register
+                </button>
+            </div>
+
+            @if (!string.IsNullOrEmpty(error))
+            {
+                <div class="alert alert-danger py-2">@error</div>
+            }
+
+            <EditForm Model="this" OnValidSubmit="HandleSubmitAsync">
+                <DataAnnotationsValidator/>
+                <ValidationSummary/>
+
+                <div class="mb-3">
+                    <label class="form-label">Login</label>
+                    <InputText class="form-control" @bind-Value="LoginString"/>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">Password</label>
+                    <InputText class="form-control" Type="password" @bind-Value="Password"/>
+                </div>
+
+                @if (!isLoginMode)
+                {
+                    <div class="mb-3">
+                        <label class="form-label">Confirm password</label>
+                        <InputText class="form-control" Type="password" @bind-Value="PasswordConfirm"/>
+                    </div>
+                }
+
+                <button type="submit" class="btn btn-primary w-100">
+                    @(isLoginMode ? "Login" : "Register")
+                </button>
+            </EditForm>
+        </div>
+    </div>
+</div>
+
+@code {
+    private bool isLoginMode = true;
+
+    public string LoginString { get; set; } = string.Empty;
+    public string Password { get; set; } = string.Empty;
+    public string PasswordConfirm { get; set; } = string.Empty;
+
+    private string? error;
+
+    private void SwitchMode(bool login)
+    {
+        isLoginMode = login;
+        error = null;
+        Password = string.Empty;
+        PasswordConfirm = string.Empty;
+    }
+
+    private async Task HandleSubmitAsync()
+    {
+        try
+        {
+            var client = HttpClientFactory.CreateClient("AuthApi");
+
+            HttpResponseMessage response;
+
+            if (isLoginMode)
+            {
+                var payload = new LoginRequest(LoginString, Password);
+                response = await client.PostAsJsonAsync("auth/login", payload);
+            }
+            else
+            {
+                if (Password != PasswordConfirm)
+                {
+                    error = "Passwords do not match.";
+                    return;
+                }
+
+                var payload = new RegisterRequest(LoginString, Password, PasswordConfirm);
+                response = await client.PostAsJsonAsync("auth/register", payload);
+            }
+
+            if (!response.IsSuccessStatusCode)
+            {
+                error = "Invalid credentials or registration failed.";
+                return;
+            }
+
+            var tokenResponse = await response.Content.ReadFromJsonAsync<TokenResponse>();
+            if (tokenResponse is null)
+            {
+                error = "Unexpected response from server.";
+                return;
+            }
+
+            await AuthState.SetAuthAsync(tokenResponse.UserId, tokenResponse.AccessToken);
+
+            error = null;
+            Navigation.NavigateTo("/home", forceLoad: false);
+        }
+        catch (Exception ex)
+        {
+            error = ex.Message;
+        }
+    }
+
+    private sealed record LoginRequest(string Login, string Password);
+
+    private sealed record RegisterRequest(string Login, string Password, string PasswordConfirm);
+
+    private sealed class TokenResponse
+    {
+        public string UserId { get; set; } = default!;
+        public string AccessToken { get; set; } = default!;
+    }
+}

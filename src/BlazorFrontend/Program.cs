@@ -1,0 +1,45 @@
+using BlazorFrontend.Common;
+using BlazorFrontend.Components;
+using BlazorFrontend.Services;
+using ServiceDefaults;
+
+var builder = WebApplication.CreateBuilder(args);
+
+builder.AddServiceDefaults();
+
+builder.Services.AddRazorComponents()
+    .AddInteractiveServerComponents();
+
+// Local storage + auth
+builder.Services.AddScoped<LocalStorageService>();
+builder.Services.AddScoped<IAuthState, BrowserAuthState>();
+builder.Services.AddScoped<AuthenticatedHttpMessageHandler>();
+builder.Services.AddScoped<ThemeService>();
+
+builder.Services.ConfigureHttpClientDefaults(http => { http.AddServiceDiscovery(); });
+
+builder.Services.AddHttpClient("AuthApi", client => { client.BaseAddress = new Uri("https+http://api-service"); });
+
+builder.Services.AddHttpClient("BackendApi", client => { client.BaseAddress = new Uri("https+http://api-service"); })
+    .AddHttpMessageHandler<AuthenticatedHttpMessageHandler>();
+
+var app = builder.Build();
+
+// Configure the HTTP request pipeline.
+if (!app.Environment.IsDevelopment())
+{
+    app.UseExceptionHandler("/Error", createScopeForErrors: true);
+    // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
+    app.UseHsts();
+}
+
+app.UseStatusCodePagesWithReExecute("/not-found", createScopeForStatusCodePages: true);
+app.UseHttpsRedirection();
+
+app.UseAntiforgery();
+
+app.MapStaticAssets();
+app.MapRazorComponents<App>()
+    .AddInteractiveServerRenderMode();
+
+app.Run();

@@ -1,0 +1,65 @@
+﻿@using BlazorFrontend.Services
+@inherits LayoutComponentBase
+@inject IHttpClientFactory HttpClientFactory
+@inject NavigationManager Navigation
+@inject IAuthState AuthState
+@inject ThemeService ThemeService
+@inject LocalStorageService Storage
+
+<div class="page">
+    <div class="sidebar app-sidebar">
+        <NavMenu/>
+    </div>
+
+    <main class="app-main">
+        <div class="top-row navbar app-navbar px-3">
+            <div class="container-fluid d-flex justify-content-between align-items-center">
+                <span class="navbar-brand mb-0 h5">MEAD</span>
+
+                <div class="d-flex align-items-center gap-2">
+                    @* You can keep the dark-mode switch here later if you want *@
+                    <button class="btn btn-outline-secondary btn-sm" @onclick="LogoutAsync">
+                        Logout
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div class="top-row-placeholder"></div>
+
+        <article class="content px-4 py-3">
+            @Body
+        </article>
+    </main>
+</div>
+
+<div id="blazor-error-ui" data-nosnippet>
+    An unhandled error has occurred.
+    <a href="." class="reload">Reload</a>
+    <span class="dismiss">🗙</span>
+</div>
+
+@code {
+
+    private async Task LogoutAsync()
+    {
+        try
+        {
+            var client = HttpClientFactory.CreateClient("AuthApi");
+
+            // POST auth/logout with empty body
+            await client.PostAsync("auth/logout", content: null);
+
+            // Clear local auth state (token, userId, etc.)
+            await AuthState.ClearAsync();
+        }
+        catch
+        {
+            // optional: log or show error
+        }
+
+        // Redirect to landing page
+        Navigation.NavigateTo("/", forceLoad: true);
+    }
+
+}
