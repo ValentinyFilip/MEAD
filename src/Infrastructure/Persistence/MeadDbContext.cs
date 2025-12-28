@@ -1,4 +1,6 @@
 ﻿using Infrastructure.Domain.Auth;
+using Infrastructure.Domain.Medications;
+using Infrastructure.Domain.Medications.Configuration;
 using Infrastructure.Domain.User;
 using Microsoft.EntityFrameworkCore;
 
@@ -12,6 +14,9 @@ public class MeadDbContext : DbContext
 
     public DbSet<User> Users { get; set; }
     public DbSet<RefreshToken> RefreshTokens { get; set; }
+    public DbSet<Medication> Medications { get; set; }
+    public DbSet<MedicationSchedule> MedicationSchedules { get; set; }
+    public DbSet<Stock> Stocks { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -19,5 +24,8 @@ public class MeadDbContext : DbContext
 
         modelBuilder.ApplyConfiguration(new UserConfiguration());
         modelBuilder.ApplyConfiguration(new RefreshTokenConfiguration());
+        modelBuilder.ApplyConfiguration(new MedicationConfiguration());
+        modelBuilder.ApplyConfiguration(new MedicationScheduleConfiguration());
+        modelBuilder.ApplyConfiguration(new StockConfiguration());
     }
 }

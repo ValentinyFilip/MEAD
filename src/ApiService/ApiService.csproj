@@ -26,9 +26,11 @@
     </ItemGroup>
 
     <ItemGroup>
-      <Folder Include="Features\MedicationSchedule\" />
-      <Folder Include="Features\Notifications\" />
-      <Folder Include="Features\WarehouseInventory\" />
+      <Folder Include="Features\MedicationSchedule\Queries\" />
+      <Folder Include="Features\Notifications\Commands\" />
+      <Folder Include="Features\Notifications\Invocables\" />
+      <Folder Include="Features\Notifications\Queries\" />
+      <Folder Include="Features\WarehouseInventory\Queries\" />
     </ItemGroup>
    
 </Project>

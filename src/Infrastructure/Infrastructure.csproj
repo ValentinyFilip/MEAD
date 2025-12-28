@@ -18,6 +18,7 @@
     </ItemGroup>
 
     <ItemGroup>
+        <Folder Include="Domain\Notifications\" />
         <Folder Include="Migrations\"/>
     </ItemGroup>
 
