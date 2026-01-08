@@ -1,6 +1,3 @@
 ﻿namespace ApiService.Features.MedicationSchedule.Commands.AddMedicationWithSchedule;
 
-public class AddMedicationWithScheduleRequest
-{
-    
-}
+public record AddMedicationWithScheduleRequest();

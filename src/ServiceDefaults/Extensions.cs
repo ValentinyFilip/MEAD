@@ -18,7 +18,6 @@ public static class Extensions
     public static TBuilder AddServiceDefaults<TBuilder>(this TBuilder builder)
         where TBuilder : IHostApplicationBuilder
     {
-        
         var minLevel = builder.Environment.IsDevelopment()
             ? LogLevel.Debug
             : LogLevel.Information;
@@ -123,8 +122,8 @@ public static class Extensions
     }
 
     private static MeterProviderBuilder AddMeters(this MeterProviderBuilder builder)
-        => builder.AddMeter("Mead.Auth.Meter");
+        => builder.AddMeter("Mead.Auth.Meter").AddMeter("Mead.Warehouse.Meter");
 
     private static TracerProviderBuilder AddSources(this TracerProviderBuilder builder)
-        => builder.AddSource("Mead.Auth");
+        => builder.AddSource("Mead.Auth").AddSource("Mead.Warehouse");
 }

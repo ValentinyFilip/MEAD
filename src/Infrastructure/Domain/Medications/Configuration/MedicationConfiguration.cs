@@ -37,5 +37,11 @@ public class MedicationConfiguration : IEntityTypeConfiguration<Medication>
             .WithOne(s => s.Medication)
             .HasForeignKey(s => s.MedicationId)
             .OnDelete(DeleteBehavior.Cascade);
+
+        builder.HasOne(e => e.User)
+            .WithMany() // No collection on User side
+            .HasForeignKey(e => e.UserId)
+            .IsRequired() // Make it required
+            .OnDelete(DeleteBehavior.Cascade);
     }
 }

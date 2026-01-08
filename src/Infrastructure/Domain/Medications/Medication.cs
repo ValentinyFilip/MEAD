@@ -5,6 +5,9 @@ namespace Infrastructure.Domain.Medications;
 public class Medication
 {
     public Guid Id { get; set; } = Guid.CreateVersion7();
+
+    public Guid UserId { get; set; }
+    public User.User User { get; set; } = null!;
     public string Name { get; set; } = string.Empty; // "Panadol", "Ibuprofen"
     public string? AlsoKnownAs { get; set; } // "Paracetamol", "generic name"
     public DosageForm Form { get; set; } // Pill, Liquid...
