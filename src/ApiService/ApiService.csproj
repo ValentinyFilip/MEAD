@@ -26,11 +26,20 @@
     </ItemGroup>
 
     <ItemGroup>
-      <Folder Include="Features\MedicationSchedule\Queries\" />
+      <Folder Include="Features\MedicationSchedule\Commands\AddMedicationWithSchedule\" />
+      <Folder Include="Features\MedicationSchedule\Commands\DeleteMedicationWithSchedule\" />
+      <Folder Include="Features\MedicationSchedule\Commands\UpdateMedicationWithSchedule\" />
+      <Folder Include="Features\MedicationSchedule\Queries\MedicationWithScheduleDetail\" />
+      <Folder Include="Features\MedicationSchedule\Queries\MedicationWithSchedule\" />
+      <Folder Include="Features\Medication\Commands\AddMedication\" />
       <Folder Include="Features\Notifications\Commands\" />
       <Folder Include="Features\Notifications\Invocables\" />
       <Folder Include="Features\Notifications\Queries\" />
-      <Folder Include="Features\WarehouseInventory\Queries\" />
+      <Folder Include="Features\WarehouseInventory\Commands\AddMedication\" />
+      <Folder Include="Features\WarehouseInventory\Commands\DeleteMedication\" />
+      <Folder Include="Features\WarehouseInventory\Commands\UpdateMedication\" />
+      <Folder Include="Features\WarehouseInventory\Queries\MedicationDetail\" />
+      <Folder Include="Features\WarehouseInventory\Queries\Medications\" />
     </ItemGroup>
    
 </Project>
