@@ -1,30 +1,73 @@
 ﻿@page "/Error"
 @using System.Diagnostics
+@inject NavigationManager Navigation
 
 <PageTitle>Error</PageTitle>
 
-<h1 class="text-danger">Error.</h1>
-<h2 class="text-danger">An error occurred while processing your request.</h2>
+<MudContainer MaxWidth="MaxWidth.Small" Class="d-flex align-center" Style="min-height: 100vh;">
+    <MudStack Spacing="4" Width="100%">
+        <MudPaper Elevation="8" Class="pa-6">
+            <MudStack Spacing="3" AlignItems="AlignItems.Center">
+                <MudIcon Icon="@Icons.Material.Filled.Error" Color="Color.Error" Style="font-size: 6rem;"/>
 
-@if (ShowRequestId)
-{
-    <p>
-        <strong>Request ID:</strong> <code>@RequestId</code>
-    </p>
-}
+                <MudText Typo="Typo.h4" Align="Align.Center" Color="Color.Error">
+                    Oops! Something went wrong
+                </MudText>
 
-<h3>Development Mode</h3>
-<p>
-    Swapping to <strong>Development</strong> environment will display more detailed information about the error that occurred.
-</p>
-<p>
-    <strong>The Development environment shouldn't be enabled for deployed applications.</strong>
-    It can result in displaying sensitive information from exceptions to end users.
-    For local debugging, enable the <strong>Development</strong> environment by setting the <strong>ASPNETCORE_ENVIRONMENT</strong> environment variable to <strong>Development</strong>
-    and restarting the app.
-</p>
+                <MudText Typo="Typo.body1" Align="Align.Center" Color="Color.Secondary">
+                    An error occurred while processing your request.
+                </MudText>
 
-@code{
+                @if (ShowRequestId)
+                {
+                    <MudChip T="string" Color="Color.Error" Size="Size.Small">
+                        Request ID: @RequestId
+                    </MudChip>
+                }
+
+                <MudStack Row="true" Spacing="2" Class="mt-2">
+                    <MudButton
+                        Variant="Variant.Filled"
+                        Color="Color.Primary"
+                        StartIcon="@Icons.Material.Filled.Home"
+                        Href="/">
+                        Home
+                    </MudButton>
+
+                    <MudButton
+                        Variant="Variant.Outlined"
+                        Color="Color.Primary"
+                        StartIcon="@Icons.Material.Filled.Refresh"
+                        OnClick="Reload">
+                        Reload
+                    </MudButton>
+                </MudStack>
+            </MudStack>
+        </MudPaper>
+
+        <MudExpansionPanels>
+            <MudExpansionPanel Text="Development Information" Icon="@Icons.Material.Filled.Info">
+                <MudStack Spacing="2">
+                    <MudText Typo="Typo.body2">
+                        Swapping to <strong>Development</strong> environment will display more detailed information
+                        about the error.
+                    </MudText>
+
+                    <MudAlert Severity="Severity.Warning" Dense="true">
+                        The Development environment shouldn't be enabled for deployed applications.
+                    </MudAlert>
+
+                    <MudText Typo="Typo.body2" Color="Color.Secondary">
+                        Set <code>ASPNETCORE_ENVIRONMENT</code> to <code>Development</code> and restart the app for
+                        detailed errors.
+                    </MudText>
+                </MudStack>
+            </MudExpansionPanel>
+        </MudExpansionPanels>
+    </MudStack>
+</MudContainer>
+
+@code {
     [CascadingParameter] private HttpContext? HttpContext { get; set; }
 
     private string? RequestId { get; set; }
@@ -32,5 +75,10 @@
 
     protected override void OnInitialized() =>
         RequestId = Activity.Current?.Id ?? HttpContext?.TraceIdentifier;
+
+    private void Reload()
+    {
+        Navigation.NavigateTo(Navigation.Uri, forceLoad: true);
+    }
 
 }

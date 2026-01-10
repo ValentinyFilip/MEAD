@@ -1,5 +1,67 @@
-﻿@page "/not-found"
-@layout MainLayout
+﻿@page "/404"
+@page "/{*path:nonfile}"
+@inject NavigationManager NavigationManager
 
-<h3>Not Found</h3>
-<p>Sorry, the content you are looking for does not exist.</p>
+<MudContainer MaxWidth="MaxWidth.Medium" Class="d-flex flex-column align-center justify-center"
+              Style="min-height: 100vh;">
+    <MudStack Spacing="6" AlignItems="AlignItems.Center">
+        <MudStack Row="true" Spacing="2" AlignItems="AlignItems.Center">
+            <MudText Typo="Typo.h1" Style="font-size: 8rem; font-weight: 900;">4</MudText>
+            <MudIcon
+                Icon="@Icons.Material.Filled.SentimentVeryDissatisfied"
+                Color="Color.Warning"
+                Style="font-size: 8rem;"/>
+            <MudText Typo="Typo.h1" Style="font-size: 8rem; font-weight: 900;">4</MudText>
+        </MudStack>
+
+        <MudText Typo="Typo.h3" Align="Align.Center">
+            Lost in the medication cabinet?
+        </MudText>
+
+        <MudText Typo="Typo.body1" Align="Align.Center" Color="Color.Secondary" Style="max-width: 500px;">
+            This page seems to have taken the wrong dose and disappeared.
+            Let's get you back to where you need to be!
+        </MudText>
+
+        <MudCard Elevation="4" Class="pa-4 mt-4"
+                 Style="background: linear-gradient(135deg, var(--mud-palette-primary) 0%, var(--mud-palette-secondary) 100%);">
+            <MudCardContent>
+                <MudStack Spacing="3">
+                    <MudButton
+                        Variant="Variant.Filled"
+                        Color="Color.Surface"
+                        StartIcon="@Icons.Material.Filled.Home"
+                        OnClick="GoHome"
+                        FullWidth="true"
+                        Size="Size.Large">
+                        Back to Dashboard
+                    </MudButton>
+
+                    <MudButton
+                        Variant="Variant.Outlined"
+                        Style="border-color: white; color: white;"
+                        StartIcon="@Icons.Material.Filled.Medication"
+                        Href="/medications"
+                        FullWidth="true"
+                        Size="Size.Large">
+                        View Medications
+                    </MudButton>
+                </MudStack>
+            </MudCardContent>
+        </MudCard>
+
+        <MudChip T="string" Color="Color.Default" Size="Size.Small">
+            Error Code: 404 | Path: @Path
+        </MudChip>
+    </MudStack>
+</MudContainer>
+
+@code {
+    [Parameter] public string? Path { get; set; }
+
+    private void GoHome()
+    {
+        NavigationManager.NavigateTo("/");
+    }
+
+}

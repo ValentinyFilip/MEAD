@@ -7,88 +7,216 @@
 @inject IHttpClientFactory HttpClientFactory
 @inject IAuthState AuthState
 @inject NavigationManager Navigation
+@inject ISnackbar Snackbar
 
-<div class="d-flex align-items-center justify-content-center min-vh-100 bg-light">
-    <div class="card shadow-sm" style="min-width: 360px; max-width: 420px;">
-        <div class="card-body p-4">
-            <h3 class="card-title text-center mb-4">
-                @(isLoginMode ? "Sign in" : "Create account")
-            </h3>
+<MudContainer MaxWidth="MaxWidth.Small" Class="d-flex align-center" Style="min-height: 100vh;">
+    <MudPaper Elevation="8" Class="pa-8" Width="100%">
+        <MudStack Spacing="4">
+            <MudStack Spacing="2" AlignItems="AlignItems.Center">
+                <MudIcon Icon="@Icons.Material.Filled.Medication" Size="Size.Large" Color="Color.Primary"
+                         Style="font-size: 4rem;"/>
+                <MudText Typo="Typo.h4" Align="Align.Center">MEAD</MudText>
+                <MudText Typo="Typo.body1" Align="Align.Center" Color="Color.Secondary">
+                    Medication Tracker
+                </MudText>
+            </MudStack>
 
-            <div class="btn-group w-100 mb-4" role="group">
-                <button type="button"
-                        class="btn @(isLoginMode ? "btn-primary" : "btn-outline-primary")"
-                        @onclick="@(() => SwitchMode(true))">
-                    Login
-                </button>
-                <button type="button"
-                        class="btn @(!isLoginMode ? "btn-primary" : "btn-outline-primary")"
-                        @onclick="@(() => SwitchMode(false))">
-                    Register
-                </button>
-            </div>
+            <MudDivider/>
 
-            @if (!string.IsNullOrEmpty(error))
+            <MudTabs Elevation="0" Rounded="true" ApplyEffectsToContainer="true" PanelClass="pa-0"
+                     @bind-ActivePanelIndex="@_activeTab">
+                <MudTabPanel Text="Sign In" Icon="@Icons.Material.Filled.Login">
+                    <EditForm Model="@this" OnValidSubmit="HandleSubmitAsync">
+                        <DataAnnotationsValidator/>
+
+                        <MudStack Spacing="3" Class="mt-4">
+                            <MudTextField
+                                @bind-Value="LoginString"
+                                Label="Email or Username"
+                                Variant="Variant.Outlined"
+                                Adornment="Adornment.Start"
+                                AdornmentIcon="@Icons.Material.Filled.Person"
+                                Required="true"
+                                RequiredError="Email or username is required"/>
+
+                            <MudTextField
+                                @bind-Value="Password"
+                                Label="Password"
+                                Variant="Variant.Outlined"
+                                InputType="@_passwordInputType"
+                                Adornment="Adornment.End"
+                                AdornmentIcon="@_passwordIcon"
+                                OnAdornmentClick="TogglePasswordVisibility"
+                                AdornmentAriaLabel="Show Password"
+                                Required="true"
+                                RequiredError="Password is required"/>
+
+                            <MudButton
+                                ButtonType="ButtonType.Submit"
+                                Variant="Variant.Filled"
+                                Color="Color.Primary"
+                                FullWidth="true"
+                                Size="Size.Large"
+                                Disabled="@_isLoading">
+                                @if (_isLoading)
+                                {
+                                    <MudProgressCircular Class="mr-2" Size="Size.Small" Indeterminate="true"/>
+                                    <MudText>Signing in...</MudText>
+                                }
+                                else
+                                {
+                                    <MudText>Sign In</MudText>
+                                }
+                            </MudButton>
+                        </MudStack>
+                    </EditForm>
+                </MudTabPanel>
+
+                <MudTabPanel Text="Register" Icon="@Icons.Material.Filled.PersonAdd">
+                    <EditForm Model="@this" OnValidSubmit="HandleSubmitAsync">
+                        <DataAnnotationsValidator/>
+
+                        <MudStack Spacing="3" Class="mt-4">
+                            <MudTextField
+                                @bind-Value="LoginString"
+                                Label="Email or Username"
+                                Variant="Variant.Outlined"
+                                Adornment="Adornment.Start"
+                                AdornmentIcon="@Icons.Material.Filled.Person"
+                                Required="true"
+                                RequiredError="Email or username is required"/>
+
+                            <MudTextField
+                                @bind-Value="Password"
+                                Label="Password"
+                                Variant="Variant.Outlined"
+                                InputType="@_passwordInputType"
+                                Adornment="Adornment.End"
+                                AdornmentIcon="@_passwordIcon"
+                                OnAdornmentClick="TogglePasswordVisibility"
+                                AdornmentAriaLabel="Show Password"
+                                Required="true"
+                                RequiredError="Password is required"
+                                HelperText="At least 6 characters"/>
+
+                            <MudTextField
+                                @bind-Value="PasswordConfirm"
+                                Label="Confirm Password"
+                                Variant="Variant.Outlined"
+                                InputType="@_passwordConfirmInputType"
+                                Adornment="Adornment.End"
+                                AdornmentIcon="@_passwordConfirmIcon"
+                                OnAdornmentClick="TogglePasswordConfirmVisibility"
+                                AdornmentAriaLabel="Show Password"
+                                Required="true"
+                                RequiredError="Password confirmation is required"/>
+
+                            <MudButton
+                                ButtonType="ButtonType.Submit"
+                                Variant="Variant.Filled"
+                                Color="Color.Primary"
+                                FullWidth="true"
+                                Size="Size.Large"
+                                Disabled="@_isLoading">
+                                @if (_isLoading)
+                                {
+                                    <MudProgressCircular Class="mr-2" Size="Size.Small" Indeterminate="true"/>
+                                    <MudText>Creating account...</MudText>
+                                }
+                                else
+                                {
+                                    <MudText>Create Account</MudText>
+                                }
+                            </MudButton>
+                        </MudStack>
+                    </EditForm>
+                </MudTabPanel>
+            </MudTabs>
+
+            @if (!string.IsNullOrEmpty(_error))
             {
-                <div class="alert alert-danger py-2">@error</div>
+                <MudAlert Severity="Severity.Error" Variant="Variant.Filled" ShowCloseIcon="true"
+                          CloseIconClicked="@(() => _error = null)">
+                    @_error
+                </MudAlert>
             }
-
-            <EditForm Model="this" OnValidSubmit="HandleSubmitAsync">
-                <DataAnnotationsValidator/>
-                <ValidationSummary/>
-
-                <div class="mb-3">
-                    <label class="form-label">Login</label>
-                    <InputText class="form-control" @bind-Value="LoginString"/>
-                </div>
-
-                <div class="mb-3">
-                    <label class="form-label">Password</label>
-                    <InputText class="form-control" Type="password" @bind-Value="Password"/>
-                </div>
-
-                @if (!isLoginMode)
-                {
-                    <div class="mb-3">
-                        <label class="form-label">Confirm password</label>
-                        <InputText class="form-control" Type="password" @bind-Value="PasswordConfirm"/>
-                    </div>
-                }
-
-                <button type="submit" class="btn btn-primary w-100">
-                    @(isLoginMode ? "Login" : "Register")
-                </button>
-            </EditForm>
-        </div>
-    </div>
-</div>
+        </MudStack>
+    </MudPaper>
+</MudContainer>
 
 @code {
-    private bool isLoginMode = true;
+    private int _activeTab = 0;
+    private bool IsLoginMode => _activeTab == 0;
 
     public string LoginString { get; set; } = string.Empty;
     public string Password { get; set; } = string.Empty;
     public string PasswordConfirm { get; set; } = string.Empty;
 
-    private string? error;
+    private string? _error;
+    private bool _isLoading = false;
+
+    // Password visibility for main password field
+    private bool _passwordVisible = false;
+    private InputType _passwordInputType = InputType.Password;
+    private string _passwordIcon = Icons.Material.Filled.VisibilityOff;
+
+    // Password visibility for confirm password field
+    private bool _passwordConfirmVisible = false;
+    private InputType _passwordConfirmInputType = InputType.Password;
+    private string _passwordConfirmIcon = Icons.Material.Filled.VisibilityOff;
 
     private void SwitchMode(bool login)
     {
-        isLoginMode = login;
-        error = null;
+        _activeTab = login ? 0 : 1;
+        _error = null;
         Password = string.Empty;
         PasswordConfirm = string.Empty;
     }
 
+    private void TogglePasswordVisibility()
+    {
+        if (_passwordVisible)
+        {
+            _passwordVisible = false;
+            _passwordInputType = InputType.Password;
+            _passwordIcon = Icons.Material.Filled.VisibilityOff;
+        }
+        else
+        {
+            _passwordVisible = true;
+            _passwordInputType = InputType.Text;
+            _passwordIcon = Icons.Material.Filled.Visibility;
+        }
+    }
+
+    private void TogglePasswordConfirmVisibility()
+    {
+        if (_passwordConfirmVisible)
+        {
+            _passwordConfirmVisible = false;
+            _passwordConfirmInputType = InputType.Password;
+            _passwordConfirmIcon = Icons.Material.Filled.VisibilityOff;
+        }
+        else
+        {
+            _passwordConfirmVisible = true;
+            _passwordConfirmInputType = InputType.Text;
+            _passwordConfirmIcon = Icons.Material.Filled.Visibility;
+        }
+    }
+
     private async Task HandleSubmitAsync()
     {
+        _isLoading = true;
+        _error = null;
+
         try
         {
             var client = HttpClientFactory.CreateClient("AuthApi");
 
             HttpResponseMessage response;
 
-            if (isLoginMode)
+            if (IsLoginMode)
             {
                 var payload = new LoginRequest(LoginString, Password);
                 response = await client.PostAsJsonAsync("auth/login", payload);
@@ -97,7 +225,9 @@
             {
                 if (Password != PasswordConfirm)
                 {
-                    error = "Passwords do not match.";
+                    _error = "Passwords do not match.";
+                    Snackbar.Add("Passwords do not match", Severity.Error);
+                    _isLoading = false;
                     return;
                 }
 
@@ -107,25 +237,47 @@
 
             if (!response.IsSuccessStatusCode)
             {
-                error = "Invalid credentials or registration failed.";
+                _error = IsLoginMode
+                    ? "Invalid credentials. Please check your email/username and password."
+                    : "Registration failed. The email/username may already be in use.";
+                Snackbar.Add(_error, Severity.Error);
+                _isLoading = false;
                 return;
             }
 
             var tokenResponse = await response.Content.ReadFromJsonAsync<TokenResponse>();
             if (tokenResponse is null)
             {
-                error = "Unexpected response from server.";
+                _error = "Unexpected response from server.";
+                Snackbar.Add(_error, Severity.Error);
+                _isLoading = false;
                 return;
             }
 
             await AuthState.SetAuthAsync(tokenResponse.UserId, tokenResponse.AccessToken);
 
-            error = null;
+            _error = null;
+            Snackbar.Add(IsLoginMode ? "Login successful!" : "Account created successfully!", Severity.Success);
+
+            // Small delay to show success message
+            await Task.Delay(500);
             Navigation.NavigateTo("/home", forceLoad: false);
+        }
+        catch (HttpRequestException ex)
+        {
+            _error = "Unable to connect to the server. Please try again later.";
+            Snackbar.Add(_error, Severity.Error);
+            _isLoading = false;
         }
         catch (Exception ex)
         {
-            error = ex.Message;
+            _error = ex.Message;
+            Snackbar.Add("An unexpected error occurred", Severity.Error);
+            _isLoading = false;
+        }
+        finally
+        {
+            _isLoading = false;
         }
     }
 
@@ -138,4 +290,5 @@
         public string UserId { get; set; } = default!;
         public string AccessToken { get; set; } = default!;
     }
+
 }

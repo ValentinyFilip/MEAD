@@ -1,6 +1,8 @@
 using BlazorFrontend.Common;
 using BlazorFrontend.Components;
 using BlazorFrontend.Services;
+using MudBlazor;
+using MudBlazor.Services;
 using ServiceDefaults;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -14,7 +16,18 @@ builder.Services.AddRazorComponents()
 builder.Services.AddScoped<LocalStorageService>();
 builder.Services.AddScoped<IAuthState, BrowserAuthState>();
 builder.Services.AddScoped<AuthenticatedHttpMessageHandler>();
-builder.Services.AddScoped<ThemeService>();
+
+builder.Services.AddMudServices(config =>
+{
+    config.SnackbarConfiguration.PositionClass = Defaults.Classes.Position.BottomRight;
+    config.SnackbarConfiguration.PreventDuplicates = false;
+    config.SnackbarConfiguration.NewestOnTop = false;
+    config.SnackbarConfiguration.ShowCloseIcon = true;
+    config.SnackbarConfiguration.VisibleStateDuration = 3000;
+    config.SnackbarConfiguration.HideTransitionDuration = 500;
+    config.SnackbarConfiguration.ShowTransitionDuration = 500;
+    config.SnackbarConfiguration.SnackbarVariant = Variant.Filled;
+});
 
 builder.Services.ConfigureHttpClientDefaults(http => { http.AddServiceDiscovery(); });
 

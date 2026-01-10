@@ -3,35 +3,54 @@
 @inject IHttpClientFactory HttpClientFactory
 @inject NavigationManager Navigation
 @inject IAuthState AuthState
-@inject ThemeService ThemeService
 @inject LocalStorageService Storage
+@inject ISnackbar Snackbar
 
-<div class="page">
-    <div class="sidebar app-sidebar">
-        <NavMenu/>
-    </div>
+<MudThemeProvider/>
+<MudPopoverProvider/>
+<MudDialogProvider/>
+<MudSnackbarProvider/>
 
-    <main class="app-main">
-        <div class="top-row navbar app-navbar px-3">
-            <div class="container-fluid d-flex justify-content-between align-items-center">
-                <span class="navbar-brand mb-0 h5">MEAD</span>
+<MudLayout>
+    <MudAppBar Elevation="1">
+        <MudIconButton Icon="@Icons.Material.Filled.Menu" Color="Color.Inherit" Edge="Edge.Start"
+                       OnClick="@ToggleDrawer"/>
+        <MudText Typo="Typo.h6">MEAD - Medication Tracker</MudText>
+        <MudSpacer/>
 
-                <div class="d-flex align-items-center gap-2">
-                    @* You can keep the dark-mode switch here later if you want *@
-                    <button class="btn btn-outline-secondary btn-sm" @onclick="LogoutAsync">
-                        Logout
-                    </button>
-                </div>
-            </div>
-        </div>
+        <MudButton Variant="Variant.Outlined"
+                   Color="Color.Inherit"
+                   StartIcon="@Icons.Material.Filled.Logout"
+                   OnClick="LogoutAsync"
+                   Size="Size.Small">
+            Logout
+        </MudButton>
+    </MudAppBar>
 
-        <div class="top-row-placeholder"></div>
+    <MudDrawer @bind-Open="@_drawerOpen" ClipMode="DrawerClipMode.Always" Elevation="2">
+        <MudDrawerHeader>
+            <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2">
+                <MudIcon Icon="@Icons.Material.Filled.Medication" Color="Color.Primary" Size="Size.Large"/>
+                <MudText Typo="Typo.h6">MEAD</MudText>
+            </MudStack>
+        </MudDrawerHeader>
 
-        <article class="content px-4 py-3">
+        <MudNavMenu>
+            <MudNavLink Href="/" Icon="@Icons.Material.Filled.Dashboard" Match="NavLinkMatch.All">Dashboard</MudNavLink>
+            <MudNavLink Href="/medications" Icon="@Icons.Material.Filled.Medication" Match="NavLinkMatch.All">
+                Medications
+            </MudNavLink>
+            <MudNavLink Href="/schedule" Icon="@Icons.Material.Filled.Schedule" Match="NavLinkMatch.All">Schedule
+            </MudNavLink>
+        </MudNavMenu>
+    </MudDrawer>
+
+    <MudMainContent>
+        <MudContainer MaxWidth="MaxWidth.Large" Class="mt-4 mb-4">
             @Body
-        </article>
-    </main>
-</div>
+        </MudContainer>
+    </MudMainContent>
+</MudLayout>
 
 <div id="blazor-error-ui" data-nosnippet>
     An unhandled error has occurred.
@@ -40,6 +59,12 @@
 </div>
 
 @code {
+    private bool _drawerOpen = true;
+
+    void ToggleDrawer()
+    {
+        _drawerOpen = !_drawerOpen;
+    }
 
     private async Task LogoutAsync()
     {
@@ -52,14 +77,16 @@
 
             // Clear local auth state (token, userId, etc.)
             await AuthState.ClearAsync();
+
+            Snackbar.Add("Logged out successfully", Severity.Success);
         }
-        catch
+        catch (Exception ex)
         {
-            // optional: log or show error
+            Snackbar.Add("Logout failed. Redirecting anyway...", Severity.Warning);
         }
 
-        // Redirect to landing page
-        Navigation.NavigateTo("/", forceLoad: true);
+        // Redirect to login page
+        Navigation.NavigateTo("/login", forceLoad: true);
     }
 
 }
