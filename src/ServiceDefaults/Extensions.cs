@@ -122,8 +122,8 @@ public static class Extensions
     }
 
     private static MeterProviderBuilder AddMeters(this MeterProviderBuilder builder)
-        => builder.AddMeter("Mead.Auth.Meter").AddMeter("Mead.Warehouse.Meter");
+        => builder.AddMeter("Mead.Auth.Meter").AddMeter("Mead.Warehouse.Meter").AddMeter("Mead.Medication.Meter");
 
     private static TracerProviderBuilder AddSources(this TracerProviderBuilder builder)
-        => builder.AddSource("Mead.Auth").AddSource("Mead.Warehouse");
+        => builder.AddSource("Mead.Auth").AddSource("Mead.Warehouse").AddSource("Mead.Medication");
 }
