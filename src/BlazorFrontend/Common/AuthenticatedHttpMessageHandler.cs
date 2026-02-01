@@ -9,54 +9,18 @@ public sealed class AuthenticatedHttpMessageHandler(
     IAuthState authState,
     IHttpClientFactory httpClientFactory) : DelegatingHandler
 {
+    public static event Func<Task>? OnUnauthorized;
+
     protected override async Task<HttpResponseMessage> SendAsync(
         HttpRequestMessage request,
         CancellationToken cancellationToken)
     {
+        string? token = null;
+
         try
         {
             // 1. Attach current access token
-            var token = await authState.GetAccessTokenAsync();
-            if (!string.IsNullOrWhiteSpace(token))
-            {
-                request.Headers.Authorization =
-                    new AuthenticationHeaderValue("Bearer", token);
-            }
-        }
-        catch (InvalidOperationException)
-        {
-            // JavaScript interop not available during prerendering - continue without token
-        }
-
-        var response = await base.SendAsync(request, cancellationToken);
-
-        if (response.StatusCode != HttpStatusCode.Unauthorized)
-        {
-            return response;
-        }
-
-        response.Dispose();
-
-        // 2. Try refresh (cookie carries refresh token, body has UserId)
-        var refreshed = await TryRefreshAsync(cancellationToken);
-        if (!refreshed)
-        {
-            try
-            {
-                await authState.ClearAsync();
-            }
-            catch (InvalidOperationException)
-            {
-                // JavaScript interop not available during prerendering
-            }
-
-            return new HttpResponseMessage(HttpStatusCode.Unauthorized);
-        }
-
-        // 3. Retry request once with new access token
-        try
-        {
-            var token = await authState.GetAccessTokenAsync();
+            token = await authState.GetAccessTokenAsync();
             if (!string.IsNullOrWhiteSpace(token))
             {
                 request.Headers.Authorization =
@@ -66,10 +30,58 @@ public sealed class AuthenticatedHttpMessageHandler(
         catch (InvalidOperationException)
         {
             // JavaScript interop not available during prerendering
+            // We'll let the request continue and handle 401 in the response
         }
 
-        var cloned = await CloneRequestAsync(request, cancellationToken);
-        return await base.SendAsync(cloned, cancellationToken);
+        var response = await base.SendAsync(request, cancellationToken);
+
+        // Only try refresh on interactive render (not during prerendering)
+        if (response.StatusCode == HttpStatusCode.Unauthorized && token != null)
+        {
+            response.Dispose();
+
+            // 2. Try refresh (cookie carries refresh token, body has UserId)
+            var refreshed = await TryRefreshAsync(cancellationToken);
+            if (!refreshed)
+            {
+                try
+                {
+                    await authState.ClearAsync();
+                }
+                catch (InvalidOperationException)
+                {
+                    // JavaScript interop not available during prerendering
+                }
+
+                // Trigger the unauthorized event for redirect
+                if (OnUnauthorized != null)
+                {
+                    await OnUnauthorized.Invoke();
+                }
+
+                return new HttpResponseMessage(HttpStatusCode.Unauthorized);
+            }
+
+            // 3. Retry request once with new access token
+            try
+            {
+                token = await authState.GetAccessTokenAsync();
+                if (!string.IsNullOrWhiteSpace(token))
+                {
+                    request.Headers.Authorization =
+                        new AuthenticationHeaderValue("Bearer", token);
+                }
+            }
+            catch (InvalidOperationException)
+            {
+                // JavaScript interop not available during prerendering
+            }
+
+            var cloned = await CloneRequestAsync(request, cancellationToken);
+            return await base.SendAsync(cloned, cancellationToken);
+        }
+
+        return response;
     }
 
     private async Task<bool> TryRefreshAsync(CancellationToken cancellationToken)
@@ -107,6 +119,11 @@ public sealed class AuthenticatedHttpMessageHandler(
         catch (InvalidOperationException)
         {
             // JavaScript interop not available during prerendering
+            return false;
+        }
+        catch (Exception)
+        {
+            // Any other error during refresh
             return false;
         }
     }

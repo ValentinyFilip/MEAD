@@ -1,10 +1,12 @@
-﻿@using BlazorFrontend.Services
-@inherits LayoutComponentBase
+﻿@inherits LayoutComponentBase
 @inject IHttpClientFactory HttpClientFactory
 @inject NavigationManager Navigation
 @inject IAuthState AuthState
 @inject LocalStorageService Storage
 @inject ISnackbar Snackbar
+@using BlazorFrontend.Common
+@using BlazorFrontend.Services
+@implements IDisposable
 
 <MudThemeProvider Theme="@_theme"/>
 <MudPopoverProvider/>
@@ -64,20 +66,20 @@
     {
         PaletteLight = new PaletteLight
         {
-            Primary = "#2196F3", // Lighter Blue (Material Blue 500)
-            Secondary = "#64B5F6", // Light Blue
-            AppbarBackground = "#2196F3", // Lighter Blue
-            Background = "#FFFFFF", // White
-            Surface = "#FFFFFF", // White
-            DrawerBackground = "#FFFFFF", // White
+            Primary = "#2196F3",
+            Secondary = "#64B5F6",
+            AppbarBackground = "#2196F3",
+            Background = "#FFFFFF",
+            Surface = "#FFFFFF",
+            DrawerBackground = "#FFFFFF",
             DrawerText = "rgba(0,0,0,0.87)",
             DrawerIcon = "rgba(0,0,0,0.54)",
             AppbarText = "#FFFFFF",
             TextPrimary = "rgba(0,0,0,0.87)",
-            TextSecondary = "#757575", // Medium Gray for secondary text
-            ActionDefault = "#9E9E9E", // Gray for icons
+            TextSecondary = "#757575",
+            ActionDefault = "#9E9E9E",
             ActionDisabled = "rgba(0,0,0,0.26)",
-            Divider = "#E0E0E0", // Light Gray for dividers
+            Divider = "#E0E0E0",
             Success = "#4CAF50",
             Info = "#2196F3",
             Warning = "#FF9800",
@@ -86,6 +88,20 @@
         },
         LayoutProperties = new LayoutProperties()
     };
+
+    protected override void OnInitialized()
+    {
+        AuthenticatedHttpMessageHandler.OnUnauthorized += HandleUnauthorized;
+    }
+
+    private async Task HandleUnauthorized()
+    {
+        await InvokeAsync(() =>
+        {
+            Snackbar.Add("Session expired. Please login again.", Severity.Warning);
+            Navigation.NavigateTo("/login", forceLoad: true);
+        });
+    }
 
     private async Task LogoutAsync()
     {
@@ -102,6 +118,11 @@
         }
 
         Navigation.NavigateTo("/login", forceLoad: true);
+    }
+
+    public void Dispose()
+    {
+        AuthenticatedHttpMessageHandler.OnUnauthorized -= HandleUnauthorized;
     }
 
 }

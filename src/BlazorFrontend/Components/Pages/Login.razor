@@ -213,66 +213,83 @@
         {
             var client = HttpClientFactory.CreateClient("AuthApi");
 
-            HttpResponseMessage response;
-
-            if (IsLoginMode)
+            if (_activeTab == 0) // Sign In
             {
-                var payload = new LoginRequest(LoginString, Password);
-                response = await client.PostAsJsonAsync("auth/login", payload);
+                var loginRequest = new LoginRequest(LoginString, Password);
+                var response = await client.PostAsJsonAsync("/api/auth/login", loginRequest);
+
+                if (response.IsSuccessStatusCode)
+                {
+                    var result = await response.Content.ReadFromJsonAsync<TokenResponse>();
+                    if (result != null)
+                    {
+                        // Make sure to save both userId and token
+                        await AuthState.SetAuthAsync(result.UserId, result.AccessToken);
+
+                        // Verify token was saved
+                        var savedToken = await AuthState.GetAccessTokenAsync();
+                        if (string.IsNullOrEmpty(savedToken))
+                        {
+                            _error = "Failed to save authentication token";
+                            return;
+                        }
+
+                        Navigation.NavigateTo("/", forceLoad: true);
+                        Snackbar.Add("Signed in successfully", Severity.Success);
+                    }
+                    else
+                    {
+                        _error = "Invalid response from server";
+                    }
+                }
+                else
+                {
+                    _error = "Invalid credentials. Please try again.";
+                }
             }
-            else
+            else // Register
             {
                 if (Password != PasswordConfirm)
                 {
-                    _error = "Passwords do not match.";
-                    Snackbar.Add("Passwords do not match", Severity.Error);
-                    _isLoading = false;
+                    _error = "Passwords do not match";
                     return;
                 }
 
-                var payload = new RegisterRequest(LoginString, Password, PasswordConfirm);
-                response = await client.PostAsJsonAsync("auth/register", payload);
+                var registerRequest = new RegisterRequest(LoginString, Password, PasswordConfirm);
+                var response = await client.PostAsJsonAsync("/api/auth/register", registerRequest);
+
+                if (response.IsSuccessStatusCode)
+                {
+                    var result = await response.Content.ReadFromJsonAsync<TokenResponse>();
+                    if (result != null)
+                    {
+                        await AuthState.SetAuthAsync(result.UserId, result.AccessToken);
+
+                        // Verify token was saved
+                        var savedToken = await AuthState.GetAccessTokenAsync();
+                        if (string.IsNullOrEmpty(savedToken))
+                        {
+                            _error = "Failed to save authentication token";
+                            return;
+                        }
+
+                        Navigation.NavigateTo("/", forceLoad: true);
+                        Snackbar.Add("Account created successfully", Severity.Success);
+                    }
+                    else
+                    {
+                        _error = "Invalid response from server";
+                    }
+                }
+                else
+                {
+                    _error = "Registration failed. User may already exist.";
+                }
             }
-
-            if (!response.IsSuccessStatusCode)
-            {
-                _error = IsLoginMode
-                    ? "Invalid credentials. Please check your email/username and password."
-                    : "Registration failed. The email/username may already be in use.";
-                Snackbar.Add(_error, Severity.Error);
-                _isLoading = false;
-                return;
-            }
-
-            var tokenResponse = await response.Content.ReadFromJsonAsync<TokenResponse>();
-            if (tokenResponse is null)
-            {
-                _error = "Unexpected response from server.";
-                Snackbar.Add(_error, Severity.Error);
-                _isLoading = false;
-                return;
-            }
-
-            await AuthState.SetAuthAsync(tokenResponse.UserId, tokenResponse.AccessToken);
-
-            _error = null;
-            Snackbar.Add(IsLoginMode ? "Login successful!" : "Account created successfully!", Severity.Success);
-
-            // Small delay to show success message
-            await Task.Delay(500);
-            Navigation.NavigateTo("/", forceLoad: false);
-        }
-        catch (HttpRequestException ex)
-        {
-            _error = "Unable to connect to the server. Please try again later.";
-            Snackbar.Add(_error, Severity.Error);
-            _isLoading = false;
         }
         catch (Exception ex)
         {
-            _error = ex.Message;
-            Snackbar.Add("An unexpected error occurred", Severity.Error);
-            _isLoading = false;
+            _error = $"An error occurred: {ex.Message}";
         }
         finally
         {
