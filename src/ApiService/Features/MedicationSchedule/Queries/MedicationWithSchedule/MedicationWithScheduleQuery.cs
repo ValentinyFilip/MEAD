@@ -11,7 +11,7 @@ public class MedicationWithScheduleQuery(MeadDbContext db)
 {
     public override void Configure()
     {
-        Get("/medication/{MedicationId:guid}");
+        Get("");
         Group<MedicationSchedulesGroup>();
     }
 

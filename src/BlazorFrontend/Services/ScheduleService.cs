@@ -8,7 +8,7 @@ public class ScheduleService(IHttpClientFactory httpClientFactory)
     public async Task<List<ScheduleDto>> GetSchedulesAsync(Guid? medicationId = null)
     {
         var client = httpClientFactory.CreateClient("BackendApi");
-        var url = "/schedules";
+        var url = "/medications/schedules";
         var response = await client.GetAsync(url);
 
         if (response.StatusCode == System.Net.HttpStatusCode.Unauthorized)
@@ -24,7 +24,7 @@ public class ScheduleService(IHttpClientFactory httpClientFactory)
     public async Task<ScheduleDto?> AddScheduleAsync(CreateScheduleRequest request)
     {
         var client = httpClientFactory.CreateClient("BackendApi");
-        var response = await client.PostAsJsonAsync("/schedules", request);
+        var response = await client.PostAsJsonAsync("/medications/schedule", request);
 
         if (response.StatusCode == System.Net.HttpStatusCode.Unauthorized)
         {
@@ -38,7 +38,7 @@ public class ScheduleService(IHttpClientFactory httpClientFactory)
     public async Task DeleteScheduleAsync(Guid scheduleId)
     {
         var client = httpClientFactory.CreateClient("BackendApi");
-        var response = await client.DeleteAsync($"/schedules/{scheduleId}");
+        var response = await client.DeleteAsync($"/medications/schedule/{scheduleId}");
 
         if (response.StatusCode == System.Net.HttpStatusCode.Unauthorized)
         {

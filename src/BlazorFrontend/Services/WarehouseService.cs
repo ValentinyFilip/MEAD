@@ -16,8 +16,8 @@ public class WarehouseService(IHttpClientFactory httpClientFactory)
         }
 
         response.EnsureSuccessStatusCode();
-        var result = await response.Content.ReadFromJsonAsync<WarehouseMedicationsResponse>();
-        return result?.Items ?? new List<StockDto>();
+        var result = await response.Content.ReadFromJsonAsync<List<StockDto>>();
+        return result ?? [];
     }
 
     public async Task<StockDto?> AddStockAsync(CreateStockRequest request)
@@ -46,6 +46,4 @@ public class WarehouseService(IHttpClientFactory httpClientFactory)
 
         response.EnsureSuccessStatusCode();
     }
-
-    private record WarehouseMedicationsResponse(List<StockDto> Items);
 }

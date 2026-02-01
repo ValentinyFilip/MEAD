@@ -1,13 +1,16 @@
-﻿namespace BlazorFrontend.Dtos;
+﻿using Infrastructure.Domain.Medications.Enums;
+using Route = Infrastructure.Domain.Medications.Enums.Route;
+
+namespace BlazorFrontend.Dtos;
 
 public record MedicationDto(
     Guid Id,
     string Name,
     string? AlsoKnownAs,
-    string Form,
+    DosageForm Form,
     decimal Strength,
-    string StrengthUnit,
-    string HowToTake,
+    StrengthUnit StrengthUnit,
+    Route HowToTake,
     string? ComesFrom,
     bool IsActive
 );

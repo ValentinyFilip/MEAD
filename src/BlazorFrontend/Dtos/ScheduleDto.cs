@@ -1,4 +1,6 @@
-﻿namespace BlazorFrontend.Dtos;
+﻿using Infrastructure.Domain.Medications.Enums;
+
+namespace BlazorFrontend.Dtos;
 
 public record ScheduleDto(
     Guid Id,

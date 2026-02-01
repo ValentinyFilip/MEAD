@@ -1,4 +1,6 @@
-﻿namespace BlazorFrontend.Dtos;
+﻿using Infrastructure.Domain.Medications.Enums;
+
+namespace BlazorFrontend.Dtos;
 
 public record StockDto(
     Guid StockId,
@@ -6,7 +8,7 @@ public record StockDto(
     string MedicationName,
     string? AlsoKnownAs,
     decimal HowManyLeft,
-    string Unit,
+    StockUnit Unit,
     DateTime? ExpiresOn,
     string? BatchNumber,
     string? WhereItsStored,

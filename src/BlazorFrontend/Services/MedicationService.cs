@@ -17,7 +17,7 @@ public class MedicationService(IHttpClientFactory httpClientFactory)
         
         response.EnsureSuccessStatusCode();
         var result = await response.Content.ReadFromJsonAsync<List<MedicationDto>>();
-        return result ?? new List<MedicationDto>();
+        return result ?? [];
     }
 
     public async Task<MedicationDto?> CreateMedicationAsync(CreateMedicationRequest request)
