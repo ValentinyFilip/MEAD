@@ -9,8 +9,6 @@ public sealed class AuthenticatedHttpMessageHandler(
     IAuthState authState,
     IHttpClientFactory httpClientFactory) : DelegatingHandler
 {
-    public static event Func<Task>? OnUnauthorized;
-
     protected override async Task<HttpResponseMessage> SendAsync(
         HttpRequestMessage request,
         CancellationToken cancellationToken)
@@ -19,31 +17,44 @@ public sealed class AuthenticatedHttpMessageHandler(
 
         try
         {
+            Console.WriteLine($"[AuthHandler] Request to: {request.RequestUri}");
+
             // 1. Attach current access token
             token = await authState.GetAccessTokenAsync();
+
             if (!string.IsNullOrWhiteSpace(token))
             {
-                request.Headers.Authorization =
-                    new AuthenticationHeaderValue("Bearer", token);
+                request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
+                Console.WriteLine($"[AuthHandler] Token attached to request (length: {token.Length})");
+            }
+            else
+            {
+                Console.WriteLine($"[AuthHandler] WARNING: No token available!");
             }
         }
-        catch (InvalidOperationException)
+        catch (InvalidOperationException ex)
         {
-            // JavaScript interop not available during prerendering
-            // We'll let the request continue and handle 401 in the response
+            Console.WriteLine($"[AuthHandler] JSInterop not available during prerendering: {ex.Message}");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"[AuthHandler] Error getting token: {ex.Message}");
         }
 
         var response = await base.SendAsync(request, cancellationToken);
+        Console.WriteLine($"[AuthHandler] Response status: {response.StatusCode}");
 
         // Only try refresh on interactive render (not during prerendering)
         if (response.StatusCode == HttpStatusCode.Unauthorized && token != null)
         {
+            Console.WriteLine("[AuthHandler] Got 401, attempting token refresh...");
             response.Dispose();
 
-            // 2. Try refresh (cookie carries refresh token, body has UserId)
+            // 2. Try refresh
             var refreshed = await TryRefreshAsync(cancellationToken);
             if (!refreshed)
             {
+                Console.WriteLine("[AuthHandler] Refresh failed, clearing auth state");
                 try
                 {
                     await authState.ClearAsync();
@@ -53,14 +64,10 @@ public sealed class AuthenticatedHttpMessageHandler(
                     // JavaScript interop not available during prerendering
                 }
 
-                // Trigger the unauthorized event for redirect
-                if (OnUnauthorized != null)
-                {
-                    await OnUnauthorized.Invoke();
-                }
-
                 return new HttpResponseMessage(HttpStatusCode.Unauthorized);
             }
+
+            Console.WriteLine("[AuthHandler] Refresh succeeded, retrying request");
 
             // 3. Retry request once with new access token
             try
@@ -68,8 +75,7 @@ public sealed class AuthenticatedHttpMessageHandler(
                 token = await authState.GetAccessTokenAsync();
                 if (!string.IsNullOrWhiteSpace(token))
                 {
-                    request.Headers.Authorization =
-                        new AuthenticationHeaderValue("Bearer", token);
+                    request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
                 }
             }
             catch (InvalidOperationException)
@@ -91,6 +97,7 @@ public sealed class AuthenticatedHttpMessageHandler(
             var userId = await authState.GetUserIdAsync();
             if (string.IsNullOrWhiteSpace(userId))
             {
+                Console.WriteLine("[AuthHandler] Refresh failed: No userId");
                 return false;
             }
 
@@ -104,26 +111,29 @@ public sealed class AuthenticatedHttpMessageHandler(
             var resp = await client.PostAsJsonAsync("auth/refresh", tokenRequest, cancellationToken);
             if (!resp.IsSuccessStatusCode)
             {
+                Console.WriteLine($"[AuthHandler] Refresh failed: {resp.StatusCode}");
                 return false;
             }
 
             var payload = await resp.Content.ReadFromJsonAsync<TokenResponse>(cancellationToken: cancellationToken);
             if (payload is null || string.IsNullOrWhiteSpace(payload.AccessToken))
             {
+                Console.WriteLine("[AuthHandler] Refresh failed: Invalid response");
                 return false;
             }
 
             await authState.SetAuthAsync(payload.UserId, payload.AccessToken);
+            Console.WriteLine("[AuthHandler] Refresh successful");
             return true;
         }
         catch (InvalidOperationException)
         {
-            // JavaScript interop not available during prerendering
+            Console.WriteLine("[AuthHandler] Refresh failed: JSInterop not available");
             return false;
         }
-        catch (Exception)
+        catch (Exception ex)
         {
-            // Any other error during refresh
+            Console.WriteLine($"[AuthHandler] Refresh failed: {ex.Message}");
             return false;
         }
     }

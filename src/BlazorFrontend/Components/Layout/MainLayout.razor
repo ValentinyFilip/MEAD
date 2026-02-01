@@ -1,57 +1,63 @@
-﻿@inherits LayoutComponentBase
+﻿@using BlazorFrontend.Services
+@inherits LayoutComponentBase
 @inject IHttpClientFactory HttpClientFactory
 @inject NavigationManager Navigation
 @inject IAuthState AuthState
-@inject LocalStorageService Storage
 @inject ISnackbar Snackbar
-@using BlazorFrontend.Common
-@using BlazorFrontend.Services
-@implements IDisposable
 
 <MudThemeProvider Theme="@_theme"/>
 <MudPopoverProvider/>
 <MudDialogProvider/>
 <MudSnackbarProvider/>
 
-<MudLayout>
-    <MudAppBar Elevation="1" Color="Color.Primary">
-        <MudIconButton Icon="@Icons.Material.Filled.Menu"
-                       Color="Color.Inherit"
-                       Edge="Edge.Start"
-                       OnClick="@(() => _drawerOpen = !_drawerOpen)"/>
-        <MudText Typo="Typo.h5" Class="ml-3">Mead</MudText>
-    </MudAppBar>
+@if (_isInitialized)
+{
+    <MudLayout>
+        <MudAppBar Elevation="1" Color="Color.Primary">
+            <MudIconButton Icon="@Icons.Material.Filled.Menu"
+                           Color="Color.Inherit"
+                           Edge="Edge.Start"
+                           OnClick="@(() => _drawerOpen = !_drawerOpen)"/>
+            <MudText Typo="Typo.h5" Class="ml-3">Mead</MudText>
+        </MudAppBar>
 
-    <MudDrawer @bind-Open="@_drawerOpen"
-               Elevation="2"
-               Color="Color.Surface"
-               ClipMode="DrawerClipMode.Always">
-        <MudDrawerHeader>
-            <MudText Typo="Typo.h6">Medication Tracker</MudText>
-        </MudDrawerHeader>
-        <MudNavMenu>
-            <MudNavLink Href="/" Match="NavLinkMatch.All" Icon="@Icons.Material.Filled.Home">
-                Home
-            </MudNavLink>
-            <MudNavLink Href="/warehouse" Match="NavLinkMatch.Prefix" Icon="@Icons.Material.Filled.Inventory">
-                Warehouse
-            </MudNavLink>
-            <MudNavLink Href="/schedules" Match="NavLinkMatch.Prefix" Icon="@Icons.Material.Filled.Schedule">
-                Schedules
-            </MudNavLink>
-            <MudDivider Class="my-2"/>
-            <MudNavLink OnClick="LogoutAsync" Icon="@Icons.Material.Filled.Logout">
-                Logout
-            </MudNavLink>
-        </MudNavMenu>
-    </MudDrawer>
+        <MudDrawer @bind-Open="@_drawerOpen"
+                   Elevation="2"
+                   Color="Color.Surface"
+                   ClipMode="DrawerClipMode.Always">
+            <MudDrawerHeader>
+                <MudText Typo="Typo.h6">Medication Tracker</MudText>
+            </MudDrawerHeader>
+            <MudNavMenu>
+                <MudNavLink Href="/" Match="NavLinkMatch.All" Icon="@Icons.Material.Filled.Home">
+                    Home
+                </MudNavLink>
+                <MudNavLink Href="/warehouse" Match="NavLinkMatch.Prefix" Icon="@Icons.Material.Filled.Inventory">
+                    Warehouse
+                </MudNavLink>
+                <MudNavLink Href="/schedules" Match="NavLinkMatch.Prefix" Icon="@Icons.Material.Filled.Schedule">
+                    Schedules
+                </MudNavLink>
+                <MudDivider Class="my-2"/>
+                <MudNavLink OnClick="LogoutAsync" Icon="@Icons.Material.Filled.Logout">
+                    Logout
+                </MudNavLink>
+            </MudNavMenu>
+        </MudDrawer>
 
-    <MudMainContent Class="pt-16 px-16">
-        <MudContainer MaxWidth="MaxWidth.ExtraLarge" Class="my-4">
-            @Body
-        </MudContainer>
-    </MudMainContent>
-</MudLayout>
+        <MudMainContent Class="pt-16 px-16">
+            <MudContainer MaxWidth="MaxWidth.ExtraLarge" Class="my-4">
+                @Body
+            </MudContainer>
+        </MudMainContent>
+    </MudLayout>
+}
+else
+{
+    <div style="display: flex; align-items: center; justify-content: center; min-height: 100vh;">
+        <MudProgressCircular Color="Color.Primary" Indeterminate="true" Size="Size.Large"/>
+    </div>
+}
 
 <div id="blazor-error-ui" data-nosnippet>
     An unhandled error has occurred.
@@ -61,6 +67,7 @@
 
 @code {
     private bool _drawerOpen = true;
+    private bool _isInitialized = false;
 
     private MudTheme _theme = new()
     {
@@ -89,18 +96,15 @@
         LayoutProperties = new LayoutProperties()
     };
 
-    protected override void OnInitialized()
+    protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        AuthenticatedHttpMessageHandler.OnUnauthorized += HandleUnauthorized;
-    }
-
-    private async Task HandleUnauthorized()
-    {
-        await InvokeAsync(() =>
+        if (firstRender)
         {
-            Snackbar.Add("Session expired. Please login again.", Severity.Warning);
-            Navigation.NavigateTo("/login", forceLoad: true);
-        });
+            // Initialize auth state - this will load from localStorage
+            await AuthState.GetAccessTokenAsync();
+            _isInitialized = true;
+            StateHasChanged();
+        }
     }
 
     private async Task LogoutAsync()
@@ -117,12 +121,7 @@
             Snackbar.Add("Logout failed. Redirecting anyway...", Severity.Warning);
         }
 
-        Navigation.NavigateTo("/login", forceLoad: true);
-    }
-
-    public void Dispose()
-    {
-        AuthenticatedHttpMessageHandler.OnUnauthorized -= HandleUnauthorized;
+        Navigation.NavigateTo("/login");
     }
 
 }

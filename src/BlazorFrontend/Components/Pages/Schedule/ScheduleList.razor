@@ -6,6 +6,7 @@
 @inject ScheduleService ScheduleService
 @inject IDialogService DialogService
 @inject ISnackbar Snackbar
+@inject NavigationManager Navigation
 
 <PageTitle>Schedules - Mead</PageTitle>
 
@@ -22,7 +23,9 @@
 
 @if (_isLoading)
 {
-    <MudProgressLinear Color="Color.Primary" Indeterminate="true"/>
+    <div style="display: flex; justify-content: center; align-items: center; min-height: 400px;">
+        <MudProgressCircular Color="Color.Primary" Indeterminate="true" Size="Size.Large"/>
+    </div>
 }
 else if (_hasError)
 {
@@ -147,6 +150,10 @@ else
         try
         {
             _schedules = await ScheduleService.GetSchedulesAsync();
+        }
+        catch (UnauthorizedAccessException)
+        {
+            Navigation.NavigateTo("/login?error=expired");
         }
         catch (HttpRequestException ex)
         {

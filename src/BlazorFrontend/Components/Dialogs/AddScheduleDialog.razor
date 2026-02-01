@@ -3,6 +3,7 @@
 @using BlazorFrontend.Services
 @inject MedicationService MedicationService
 @inject ScheduleService ScheduleService
+@inject NavigationManager Navigation
 
 <MudDialog>
     <DialogContent>
@@ -155,6 +156,10 @@
             ));
 
             MudDialog.Close(DialogResult.Ok(true));
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            Navigation.NavigateTo("/login?error=expired");
         }
         finally
         {

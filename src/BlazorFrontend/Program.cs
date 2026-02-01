@@ -13,13 +13,13 @@ builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
 
 // Local storage + auth
-builder.Services.AddScoped<LocalStorageService>();
 builder.Services.AddScoped<IAuthState, BrowserAuthState>();
 builder.Services.AddScoped<AuthenticatedHttpMessageHandler>();
 
 builder.Services.AddScoped<MedicationService>();
 builder.Services.AddScoped<WarehouseService>();
 builder.Services.AddScoped<ScheduleService>();
+builder.Services.AddScoped<AuthenticatedHttpMessageHandler>();
 
 builder.Services.AddMudServices(config =>
 {

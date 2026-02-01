@@ -1,6 +1,7 @@
 ﻿@page "/login"
 @using BlazorFrontend.Dtos
 @using BlazorFrontend.Services
+@using Microsoft.AspNetCore.WebUtilities
 @rendermode InteractiveServer
 @layout BlankLayout
 @inject IHttpClientFactory HttpClientFactory
@@ -20,9 +21,22 @@
                 </MudText>
             </MudStack>
 
+            @if (_showExpiredMessage)
+            {
+                <MudAlert Severity="Severity.Error" Variant="Variant.Filled" ShowCloseIcon="true"
+                          CloseIconClicked="@(() => _showExpiredMessage = false)">
+                    <MudText Typo="Typo.body2"><strong>Session Expired</strong></MudText>
+                    <MudText Typo="Typo.body2">Your session has expired. Please sign in again.</MudText>
+                </MudAlert>
+            }
+
             <MudDivider/>
 
-            <MudTabs Elevation="0" Rounded="true" ApplyEffectsToContainer="true" PanelClass="pa-0"
+            <MudTabs Elevation="0"
+                     Rounded="true"
+                     ApplyEffectsToContainer="true"
+                     PanelClass="pa-0"
+                     Centered="true"
                      @bind-ActivePanelIndex="@_activeTab">
                 <MudTabPanel Text="Sign In" Icon="@Icons.Material.Filled.Login">
                     <EditForm Model="@this" OnValidSubmit="HandleSubmitAsync">
@@ -145,7 +159,7 @@
 
 @code {
     private int _activeTab = 0;
-    private bool IsLoginMode => _activeTab == 0;
+    private bool _showExpiredMessage = false;
 
     public string LoginString { get; set; } = string.Empty;
     public string Password { get; set; } = string.Empty;
@@ -164,12 +178,15 @@
     private InputType _passwordConfirmInputType = InputType.Password;
     private string _passwordConfirmIcon = Icons.Material.Filled.VisibilityOff;
 
-    private void SwitchMode(bool login)
+    protected override void OnInitialized()
     {
-        _activeTab = login ? 0 : 1;
-        _error = null;
-        Password = string.Empty;
-        PasswordConfirm = string.Empty;
+        var uri = new Uri(Navigation.Uri);
+        var query = QueryHelpers.ParseQuery(uri.Query);
+
+        if (query.TryGetValue("error", out var errorValue) && errorValue == "expired")
+        {
+            _showExpiredMessage = true;
+        }
     }
 
     private void TogglePasswordVisibility()
@@ -216,26 +233,35 @@
             if (_activeTab == 0) // Sign In
             {
                 var loginRequest = new LoginRequest(LoginString, Password);
-                var response = await client.PostAsJsonAsync("/api/auth/login", loginRequest);
+                var response = await client.PostAsJsonAsync("/auth/login", loginRequest);
 
                 if (response.IsSuccessStatusCode)
                 {
                     var result = await response.Content.ReadFromJsonAsync<TokenResponse>();
                     if (result != null)
                     {
-                        // Make sure to save both userId and token
+                        Console.WriteLine($"[Login] Received token, length: {result.AccessToken?.Length ?? 0}");
+
+                        // Save auth state
                         await AuthState.SetAuthAsync(result.UserId, result.AccessToken);
+
+                        // Wait a bit to ensure it's saved
+                        await Task.Delay(100);
 
                         // Verify token was saved
                         var savedToken = await AuthState.GetAccessTokenAsync();
+                        Console.WriteLine($"[Login] Verified saved token, length: {savedToken?.Length ?? 0}");
+
                         if (string.IsNullOrEmpty(savedToken))
                         {
                             _error = "Failed to save authentication token";
                             return;
                         }
 
-                        Navigation.NavigateTo("/", forceLoad: true);
                         Snackbar.Add("Signed in successfully", Severity.Success);
+
+                        // Use regular navigation without forceLoad
+                        Navigation.NavigateTo("/", forceLoad: true);
                     }
                     else
                     {
@@ -256,25 +282,29 @@
                 }
 
                 var registerRequest = new RegisterRequest(LoginString, Password, PasswordConfirm);
-                var response = await client.PostAsJsonAsync("/api/auth/register", registerRequest);
+                var response = await client.PostAsJsonAsync("/auth/register", registerRequest);
 
                 if (response.IsSuccessStatusCode)
                 {
                     var result = await response.Content.ReadFromJsonAsync<TokenResponse>();
                     if (result != null)
                     {
-                        await AuthState.SetAuthAsync(result.UserId, result.AccessToken);
+                        Console.WriteLine($"[Register] Received token, length: {result.AccessToken?.Length ?? 0}");
 
-                        // Verify token was saved
+                        await AuthState.SetAuthAsync(result.UserId, result.AccessToken);
+                        await Task.Delay(100);
+
                         var savedToken = await AuthState.GetAccessTokenAsync();
+                        Console.WriteLine($"[Register] Verified saved token, length: {savedToken?.Length ?? 0}");
+
                         if (string.IsNullOrEmpty(savedToken))
                         {
                             _error = "Failed to save authentication token";
                             return;
                         }
 
-                        Navigation.NavigateTo("/", forceLoad: true);
                         Snackbar.Add("Account created successfully", Severity.Success);
+                        Navigation.NavigateTo("/");
                     }
                     else
                     {
@@ -290,12 +320,14 @@
         catch (Exception ex)
         {
             _error = $"An error occurred: {ex.Message}";
+            Console.WriteLine($"[Login] ERROR: {ex.Message}\n{ex.StackTrace}");
         }
         finally
         {
             _isLoading = false;
         }
     }
+
 
     private sealed record LoginRequest(string Login, string Password);
 

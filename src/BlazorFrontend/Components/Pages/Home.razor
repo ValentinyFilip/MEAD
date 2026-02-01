@@ -1,5 +1,6 @@
 ﻿@page "/"
 @using BlazorFrontend.Services
+@inject NavigationManager Navigation
 @rendermode InteractiveServer
 @inject WarehouseService WarehouseService
 @inject ScheduleService ScheduleService
@@ -133,6 +134,10 @@ else
 
             var medications = await MedicationService.GetMedicationsAsync();
             _totalMedications = medications.Count(m => m.IsActive);
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            Navigation.NavigateTo("/login?error=expired");
         }
         catch
         {

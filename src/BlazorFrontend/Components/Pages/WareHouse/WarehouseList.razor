@@ -6,6 +6,7 @@
 @inject WarehouseService WarehouseService
 @inject IDialogService DialogService
 @inject ISnackbar Snackbar
+@inject NavigationManager Navigation
 
 <PageTitle>Warehouse - Mead</PageTitle>
 
@@ -22,7 +23,9 @@
 
 @if (_isLoading)
 {
-    <MudProgressLinear Color="Color.Primary" Indeterminate="true"/>
+    <div style="display: flex; justify-content: center; align-items: center; min-height: 400px;">
+        <MudProgressCircular Color="Color.Primary" Indeterminate="true" Size="Size.Large"/>
+    </div>
 }
 else if (_hasError)
 {
@@ -159,6 +162,11 @@ else
         try
         {
             _stocks = await WarehouseService.GetWarehouseStocksAsync();
+        }
+        catch (UnauthorizedAccessException)
+        {
+            Navigation.NavigateTo("/login?error=expired");
+            return;
         }
         catch (HttpRequestException ex)
         {
