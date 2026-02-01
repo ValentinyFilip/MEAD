@@ -12,91 +12,174 @@
         <MudStepper @ref="_stepper" Linear="true">
             <ChildContent>
                 <MudStep Title="Select Medication">
-                    <div class="d-flex flex-column" style="gap: 1rem;">
-                        <MudRadioGroup @bind-Value="_selectedOption">
-                            <MudRadio Value="@("existing")">Select from existing medications</MudRadio>
-                            <MudRadio Value="@("new")">Create new medication</MudRadio>
-                        </MudRadioGroup>
+                    <MudForm @ref="_medicationForm">
+                        <div class="d-flex flex-column" style="gap: 1rem;">
+                            <MudRadioGroup T="string" @bind-Value="_selectedOption">
+                                <MudRadio T="string" Value="@("existing")">Select from existing medications</MudRadio>
+                                <MudRadio T="string" Value="@("new")">Create new medication</MudRadio>
+                            </MudRadioGroup>
 
-                        @if (_selectedOption == "existing")
-                        {
-                            <MudSelect @bind-Value="_selectedMedicationId" Label="Medication" Variant="Variant.Outlined"
-                                       Required="true">
-                                @foreach (var med in _medications)
-                                {
-                                    <MudSelectItem Value="@med.Id">@med.Name (@med.Form)</MudSelectItem>
-                                }
-                            </MudSelect>
-                        }
-                        else if (_selectedOption == "new")
-                        {
-                            <MudTextField @bind-Value="_newMedication.Name" Label="Name" Variant="Variant.Outlined"
-                                          Required="true"/>
-                            <MudTextField @bind-Value="_newMedication.AlsoKnownAs" Label="Also Known As"
-                                          Variant="Variant.Outlined"/>
-                            <MudTextField @bind-Value="_newMedication.Form" Label="Form" Variant="Variant.Outlined"
-                                          Required="true"/>
-                            <MudNumericField @bind-Value="_newMedication.Strength" Label="Strength"
-                                             Variant="Variant.Outlined" Required="true"/>
-                            <MudTextField @bind-Value="_newMedication.StrengthUnit" Label="Unit"
-                                          Variant="Variant.Outlined" Required="true"/>
-                            <MudTextField @bind-Value="_newMedication.HowToTake" Label="How to Take"
-                                          Variant="Variant.Outlined" Required="true"/>
-                        }
-                    </div>
+                            @if (_selectedOption == "existing")
+                            {
+                                <MudSelect T="Guid?"
+                                           @bind-Value="_selectedMedicationId"
+                                           Label="Medication"
+                                           Variant="Variant.Outlined"
+                                           Required="true"
+                                           RequiredError="Please select a medication"
+                                           AnchorOrigin="Origin.BottomCenter"
+                                           LockScroll="false">
+                                    @foreach (var med in _medications)
+                                    {
+                                        <MudSelectItem T="Guid?" Value="@med.Id">@med.Name (@med.Form)</MudSelectItem>
+                                    }
+                                </MudSelect>
+                            }
+                            else if (_selectedOption == "new")
+                            {
+                                <MudTextField @bind-Value="_newMedication.Name" Label="Name" Variant="Variant.Outlined"
+                                              Required="true" RequiredError="Name is required"
+                                              For="@(() => _newMedication.Name)"/>
+                                <MudTextField @bind-Value="_newMedication.AlsoKnownAs" Label="Also Known As"
+                                              Variant="Variant.Outlined"
+                                              For="@(() => _newMedication.AlsoKnownAs)"/>
+
+                                <MudSelect T="DosageForm" @bind-Value="_newMedication.Form" Label="Form"
+                                           Variant="Variant.Outlined"
+                                           Required="true" RequiredError="Form is required"
+                                           For="@(() => _newMedication.Form)"
+                                           AnchorOrigin="Origin.BottomCenter"
+                                           LockScroll="false">
+                                    @foreach (DosageForm form in Enum.GetValues(typeof(DosageForm)))
+                                    {
+                                        <MudSelectItem T="DosageForm" Value="@form">@form.ToString()</MudSelectItem>
+                                    }
+                                </MudSelect>
+
+                                <MudNumericField @bind-Value="_newMedication.Strength" Label="Strength"
+                                                 Variant="Variant.Outlined" Required="true"
+                                                 RequiredError="Strength is required"
+                                                 Min="0m"
+                                                 For="@(() => _newMedication.Strength)"/>
+
+                                <MudSelect T="StrengthUnit" @bind-Value="_newMedication.StrengthUnit" Label="Unit"
+                                           Variant="Variant.Outlined"
+                                           Required="true" RequiredError="Unit is required"
+                                           For="@(() => _newMedication.StrengthUnit)"
+                                           AnchorOrigin="Origin.BottomCenter"
+                                           LockScroll="false">
+                                    @foreach (StrengthUnit unit in Enum.GetValues(typeof(StrengthUnit)))
+                                    {
+                                        <MudSelectItem T="StrengthUnit" Value="@unit">@unit.ToString()</MudSelectItem>
+                                    }
+                                </MudSelect>
+
+                                <MudSelect T="Route" @bind-Value="_newMedication.HowToTake" Label="How to Take"
+                                           Variant="Variant.Outlined"
+                                           Required="true" RequiredError="Route is required"
+                                           For="@(() => _newMedication.HowToTake)"
+                                           AnchorOrigin="Origin.BottomCenter"
+                                           LockScroll="false">
+                                    @foreach (Route route in Enum.GetValues(typeof(Route)))
+                                    {
+                                        <MudSelectItem T="Route"
+                                                       Value="@route">@FormatEnumName(route.ToString())</MudSelectItem>
+                                    }
+                                </MudSelect>
+                            }
+                        </div>
+                    </MudForm>
                 </MudStep>
 
                 <MudStep Title="Schedule Details">
-                    <div class="d-flex flex-column" style="gap: 1rem;">
-                        <MudNumericField @bind-Value="_scheduleModel.AmountPerTime" Label="Amount per dose"
-                                         Variant="Variant.Outlined" Required="true"/>
-                        <MudTextField @bind-Value="_scheduleModel.AmountUnit" Label="Unit (pill, teaspoon, etc.)"
-                                      Variant="Variant.Outlined" Required="true"/>
-                        <MudTextField @bind-Value="_scheduleModel.HowOften" Label="Frequency (Daily, Weekly, etc.)"
-                                      Variant="Variant.Outlined" Required="true"/>
+                    <MudForm @ref="_scheduleForm">
+                        <div class="d-flex flex-column" style="gap: 1rem;">
+                            <MudNumericField @bind-Value="_scheduleModel.AmountPerTime" Label="Amount per dose"
+                                             Variant="Variant.Outlined" Required="true"
+                                             RequiredError="Amount is required"
+                                             Min="0m"
+                                             For="@(() => _scheduleModel.AmountPerTime)"/>
 
-                        <MudText Typo="Typo.body2">Dosage Times</MudText>
-                        @foreach (var (time, index) in _scheduleModel.Times.Select((t, i) => (t, i)))
-                        {
-                            <div class="d-flex" style="gap: 0.5rem;">
-                                <MudTextField @bind-Value="_scheduleModel.Times[index]" Label=@($"Time {index + 1}")
-                                              Variant="Variant.Outlined"/>
-                                <MudIconButton Icon="@Icons.Material.Filled.Delete"
-                                               OnClick="@(() => RemoveTime(index))"/>
-                            </div>
-                        }
-                        <MudButton StartIcon="@Icons.Material.Filled.Add" OnClick="AddTime" Variant="Variant.Outlined">
-                            Add Time
-                        </MudButton>
+                            <MudSelect T="ScheduleUnit" @bind-Value="_scheduleModel.AmountUnit" Label="Unit"
+                                       Variant="Variant.Outlined"
+                                       Required="true" RequiredError="Unit is required"
+                                       For="@(() => _scheduleModel.AmountUnit)"
+                                       AnchorOrigin="Origin.BottomCenter"
+                                       LockScroll="false">
+                                @foreach (ScheduleUnit unit in Enum.GetValues(typeof(ScheduleUnit)))
+                                {
+                                    <MudSelectItem T="ScheduleUnit" Value="@unit">@unit.ToString()</MudSelectItem>
+                                }
+                            </MudSelect>
 
-                        <MudDatePicker @bind-Date="_startDate" Label="Start Date" Variant="Variant.Outlined"
-                                       Required="true"/>
-                        <MudDatePicker @bind-Date="_endDate" Label="End Date (optional)" Variant="Variant.Outlined"/>
-                    </div>
+                            <MudSelect T="FrequencyType" @bind-Value="_scheduleModel.HowOften" Label="Frequency"
+                                       Variant="Variant.Outlined"
+                                       Required="true" RequiredError="Frequency is required"
+                                       For="@(() => _scheduleModel.HowOften)"
+                                       AnchorOrigin="Origin.BottomCenter"
+                                       LockScroll="false">
+                                @foreach (FrequencyType freq in Enum.GetValues(typeof(FrequencyType)))
+                                {
+                                    <MudSelectItem T="FrequencyType"
+                                                   Value="@freq">@FormatEnumName(freq.ToString())</MudSelectItem>
+                                }
+                            </MudSelect>
+
+                            <MudText Typo="Typo.body2" Class="mt-2">Dosage Times</MudText>
+                            <MudText Typo="Typo.body2" Class="mt-2">Dosage Times</MudText>
+                            @foreach (var (time, index) in _scheduleModel.Times.Select((t, i) => (t, i)))
+                            {
+                                <div class="d-flex" style="gap: 0.5rem;">
+                                    <MudTextField @bind-Value="_scheduleModel.Times[index]"
+                                                  Label=@($"Time {index + 1}")
+                                                  Variant="Variant.Outlined"
+                                                  Placeholder="HH:mm (e.g., 08:00)"
+                                                  Style="flex: 1;"/>
+                                    <MudIconButton Icon="@Icons.Material.Filled.Delete"
+                                                   Color="Color.Error"
+                                                   OnClick="@(() => RemoveTime(index))"
+                                                   Disabled="@(_scheduleModel.Times.Count <= 1)"/>
+                                </div>
+                            }
+
+                            <MudButton StartIcon="@Icons.Material.Filled.Add"
+                                       OnClick="AddTime"
+                                       Variant="Variant.Outlined"
+                                       Color="Color.Primary">
+                                Add Time
+                            </MudButton>
+
+                            <MudDatePicker @bind-Date="_startDate" Label="Start Date" Variant="Variant.Outlined"
+                                           Required="true" RequiredError="Start date is required"/>
+                            <MudDatePicker @bind-Date="_endDate" Label="End Date (optional)"
+                                           Variant="Variant.Outlined"/>
+                        </div>
+                    </MudForm>
                 </MudStep>
             </ChildContent>
-            <ActionContent>
-                <MudButton OnClick="Cancel">Cancel</MudButton>
-                <MudButton Color="Color.Primary" OnClick="Submit" Disabled="_isSubmitting"
-                           Style="@(_stepper.ActiveIndex == 0 ? "display:none" : "")">
-                    @if (_isSubmitting)
-                    {
-                        <MudProgressCircular Size="Size.Small" Indeterminate="true"/>
-                    }
-                    else
-                    {
-                        <span>Add</span>
-                    }
-                </MudButton>
-            </ActionContent>
         </MudStepper>
     </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="Cancel">Cancel</MudButton>
+        <MudButton Color="Color.Primary" OnClick="Submit" Disabled="_isSubmitting">
+            @if (_isSubmitting)
+            {
+                <MudProgressCircular Size="Size.Small" Indeterminate="true"/>
+            }
+            else
+            {
+                <span>Add</span>
+            }
+        </MudButton>
+    </DialogActions>
 </MudDialog>
 
 @code {
     [CascadingParameter] private IMudDialogInstance MudDialog { get; set; } = null!;
 
     private MudStepper _stepper = null!;
+    private MudForm _medicationForm = null!;
+    private MudForm _scheduleForm = null!;
     private List<MedicationDto> _medications = new();
     private string _selectedOption = "existing";
     private Guid? _selectedMedicationId;
@@ -119,11 +202,28 @@
 
     private void RemoveTime(int index)
     {
-        _scheduleModel.Times.RemoveAt(index);
+        if (_scheduleModel.Times.Count > 1)
+        {
+            _scheduleModel.Times.RemoveAt(index);
+        }
     }
 
     private async Task Submit()
     {
+        // Validate current step
+        if (_stepper.ActiveIndex == 0)
+        {
+            await _medicationForm.Validate();
+            if (!_medicationForm.IsValid)
+                return;
+            await _stepper.ResetAsync();
+            return;
+        }
+
+        await _scheduleForm.Validate();
+        if (!_scheduleForm.IsValid)
+            return;
+
         _isSubmitting = true;
         try
         {
@@ -171,7 +271,12 @@
 
     private void Cancel()
     {
-        MudDialog.Cancel();
+        MudDialog.Close(DialogResult.Cancel());
+    }
+
+    private string FormatEnumName(string enumValue)
+    {
+        return System.Text.RegularExpressions.Regex.Replace(enumValue, "([a-z])([A-Z])", "$1 $2");
     }
 
     private class NewMedicationModel
@@ -184,13 +289,12 @@
         [Required] public Route HowToTake { get; set; } = Route.ByMouth;
     }
 
-
     private class ScheduleModel
     {
-        public decimal AmountPerTime { get; set; } = 1;
-        public string AmountUnit { get; set; } = "pill";
-        public string HowOften { get; set; } = "Daily";
-        public List<string> Times { get; set; } = new() { "08:00" };
+        [Required] public decimal AmountPerTime { get; set; } = 1;
+        [Required] public ScheduleUnit AmountUnit { get; set; } = ScheduleUnit.Pill;
+        [Required] public FrequencyType HowOften { get; set; } = FrequencyType.OnceADay;
+        [Required] public List<string> Times { get; set; } = ["08:00"];
     }
 
 }

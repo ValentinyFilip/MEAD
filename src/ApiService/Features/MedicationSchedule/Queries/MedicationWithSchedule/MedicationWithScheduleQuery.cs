@@ -48,7 +48,7 @@ public class MedicationWithScheduleQuery(MeadDbContext db)
                 s.AmountPerTime,
                 s.AmountUnit,
                 s.HowOften,
-                s.Times.Count,
+                s.Times,
                 s.StartsOn,
                 s.EndsOn,
                 s.IsActive,

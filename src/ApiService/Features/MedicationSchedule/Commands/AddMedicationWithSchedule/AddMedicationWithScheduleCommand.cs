@@ -42,8 +42,8 @@ public class AddMedicationWithScheduleCommand(MeadDbContext db)
             AmountUnit = req.AmountUnit,
             HowOften = req.HowOften,
             Times = req.Times,
-            StartsOn = req.StartsOn,
-            EndsOn = req.EndsOn,
+            StartsOn = req.StartsOn.ToUniversalTime(),
+            EndsOn = req.EndsOn?.ToUniversalTime(),
             IsActive = true,
             CreatedAt = DateTime.UtcNow
         };

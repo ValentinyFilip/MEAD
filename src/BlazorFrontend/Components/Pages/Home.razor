@@ -129,8 +129,8 @@ else
             _lowStockCount = stocks.Count(s => s.IsLowStock);
 
             var schedules = await ScheduleService.GetSchedulesAsync();
-            _activeSchedulesCount = schedules.Count(s => s.IsActive && !s.IsExpired);
-            _todayDosesCount = schedules.Where(s => s is { IsActive: true, IsExpired: false }).Sum(s => s.TimesPerDay);
+            _activeSchedulesCount = schedules.Count(s => s is { IsActive: true, IsExpired: false });
+            _todayDosesCount = schedules.Where(s => s is { IsActive: true, IsExpired: false }).Sum(s => s.TimesPerDay.Count);
 
             var medications = await MedicationService.GetMedicationsAsync();
             _totalMedications = medications.Count(m => m.IsActive);

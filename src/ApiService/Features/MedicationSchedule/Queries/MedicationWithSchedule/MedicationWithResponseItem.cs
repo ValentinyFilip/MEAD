@@ -9,7 +9,7 @@ public sealed record MedicationWithScheduleItem(
     decimal AmountPerTime,
     ScheduleUnit AmountUnit,
     FrequencyType HowOften,
-    int TimesPerDay,
+    List<string> TimesPerDay,
     DateTime StartsOn,
     DateTime? EndsOn,
     bool IsActive,
