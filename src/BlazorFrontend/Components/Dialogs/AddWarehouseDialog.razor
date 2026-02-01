@@ -1,6 +1,8 @@
 ﻿@using BlazorFrontend.Dtos
 @using BlazorFrontend.Dtos.Requests
 @using BlazorFrontend.Services
+@using System.ComponentModel.DataAnnotations
+@using Infrastructure.Domain.Medications.Enums
 @inject MedicationService MedicationService
 @inject WarehouseService WarehouseService
 @inject NavigationManager Navigation
@@ -10,78 +12,142 @@
         <MudStepper @ref="_stepper" Linear="true">
             <ChildContent>
                 <MudStep Title="Select Medication">
-                    <div class="d-flex flex-column" style="gap: 1rem;">
-                        <MudRadioGroup @bind-Value="_selectedOption">
-                            <MudRadio Value="@("existing")">Select from existing medications</MudRadio>
-                            <MudRadio Value="@("new")">Create new medication</MudRadio>
-                        </MudRadioGroup>
+                    <MudForm @ref="_medicationForm">
+                        <div class="d-flex flex-column" style="gap: 1rem;">
+                            <MudRadioGroup T="string" @bind-Value="_selectedOption">
+                                <MudRadio T="string" Value="@("existing")">Select from existing medications</MudRadio>
+                                <MudRadio T="string" Value="@("new")">Create new medication</MudRadio>
+                            </MudRadioGroup>
+                            @if (_selectedOption == "existing")
+                            {
+                                <MudSelect T="Guid?"
+                                           @bind-Value="_selectedMedicationId"
+                                           Label="Medication"
+                                           Variant="Variant.Outlined"
+                                           Required="true"
+                                           RequiredError="Please select a medication"
+                                           AnchorOrigin="Origin.BottomCenter"
+                                           LockScroll="false">
+                                    @foreach (var med in _medications)
+                                    {
+                                        <MudSelectItem T="Guid?" Value="@med.Id">@med.Name (@med.Form)</MudSelectItem>
+                                    }
+                                </MudSelect>
+                            }
+                            else if (_selectedOption == "new")
+                            {
+                                <MudTextField @bind-Value="_newMedication.Name" Label="Name" Variant="Variant.Outlined"
+                                              Required="true" RequiredError="Name is required"
+                                              For="@(() => _newMedication.Name)"/>
+                                <MudTextField @bind-Value="_newMedication.AlsoKnownAs" Label="Also Known As"
+                                              Variant="Variant.Outlined"
+                                              For="@(() => _newMedication.AlsoKnownAs)"/>
 
-                        @if (_selectedOption == "existing")
-                        {
-                            <MudSelect @bind-Value="_selectedMedicationId" Label="Medication" Variant="Variant.Outlined"
-                                       Required="true">
-                                @foreach (var med in _medications)
-                                {
-                                    <MudSelectItem Value="@med.Id">@med.Name (@med.Form)</MudSelectItem>
-                                }
-                            </MudSelect>
-                        }
-                        else if (_selectedOption == "new")
-                        {
-                            <MudTextField @bind-Value="_newMedication.Name" Label="Name" Variant="Variant.Outlined"
-                                          Required="true"/>
-                            <MudTextField @bind-Value="_newMedication.AlsoKnownAs" Label="Also Known As"
-                                          Variant="Variant.Outlined"/>
-                            <MudTextField @bind-Value="_newMedication.Form" Label="Form" Variant="Variant.Outlined"
-                                          Required="true"/>
-                            <MudNumericField @bind-Value="_newMedication.Strength" Label="Strength"
-                                             Variant="Variant.Outlined" Required="true"/>
-                            <MudTextField @bind-Value="_newMedication.StrengthUnit" Label="Unit"
-                                          Variant="Variant.Outlined" Required="true"/>
-                            <MudTextField @bind-Value="_newMedication.HowToTake" Label="How to Take"
-                                          Variant="Variant.Outlined" Required="true"/>
-                        }
-                    </div>
+                                <MudSelect T="DosageForm" @bind-Value="_newMedication.Form" Label="Form"
+                                           Variant="Variant.Outlined"
+                                           Required="true" RequiredError="Form is required"
+                                           For="@(() => _newMedication.Form)"
+                                           AnchorOrigin="Origin.BottomCenter"
+                                           LockScroll="false">
+                                    @foreach (DosageForm form in Enum.GetValues(typeof(DosageForm)))
+                                    {
+                                        <MudSelectItem T="DosageForm" Value="@form">@form.ToString()</MudSelectItem>
+                                    }
+                                </MudSelect>
+
+                                <MudNumericField @bind-Value="_newMedication.Strength" Label="Strength"
+                                                 Variant="Variant.Outlined" Required="true"
+                                                 RequiredError="Strength is required"
+                                                 Min="0m"
+                                                 For="@(() => _newMedication.Strength)"/>
+
+                                <MudSelect T="StrengthUnit" @bind-Value="_newMedication.StrengthUnit" Label="Unit"
+                                           Variant="Variant.Outlined"
+                                           Required="true" RequiredError="Unit is required"
+                                           For="@(() => _newMedication.StrengthUnit)"
+                                           AnchorOrigin="Origin.BottomCenter"
+                                           LockScroll="false">
+                                    @foreach (StrengthUnit unit in Enum.GetValues(typeof(StrengthUnit)))
+                                    {
+                                        <MudSelectItem T="StrengthUnit" Value="@unit">@unit.ToString()</MudSelectItem>
+                                    }
+                                </MudSelect>
+
+                                <MudSelect T="Route" @bind-Value="_newMedication.HowToTake" Label="How to Take"
+                                           Variant="Variant.Outlined"
+                                           Required="true" RequiredError="Route is required"
+                                           For="@(() => _newMedication.HowToTake)"
+                                           AnchorOrigin="Origin.BottomCenter"
+                                           LockScroll="false">
+                                    @foreach (Route route in Enum.GetValues(typeof(Route)))
+                                    {
+                                        <MudSelectItem T="Route"
+                                                       Value="@route">@FormatEnumName(route.ToString())</MudSelectItem>
+                                    }
+                                </MudSelect>
+                            }
+                        </div>
+                    </MudForm>
                 </MudStep>
 
                 <MudStep Title="Stock Details">
-                    <div class="d-flex flex-column" style="gap: 1rem;">
-                        <MudNumericField @bind-Value="_stockModel.HowManyLeft" Label="Quantity"
-                                         Variant="Variant.Outlined" Required="true"/>
-                        <MudTextField @bind-Value="_stockModel.Unit" Label="Unit (pills, bottles, etc.)"
-                                      Variant="Variant.Outlined" Required="true"/>
-                        <MudDatePicker @bind-Date="_expiryDate" Label="Expiry Date" Variant="Variant.Outlined"/>
-                        <MudTextField @bind-Value="_stockModel.BatchNumber" Label="Batch Number"
-                                      Variant="Variant.Outlined"/>
-                        <MudTextField @bind-Value="_stockModel.WhereItsStored" Label="Storage Location"
-                                      Variant="Variant.Outlined"/>
-                        <MudNumericField @bind-Value="_stockModel.WarnWhenBelow" Label="Low Stock Warning Threshold"
-                                         Variant="Variant.Outlined"/>
-                    </div>
+                    <MudForm @ref="_stockForm">
+                        <div class="d-flex flex-column" style="gap: 1rem;">
+                            <MudNumericField @bind-Value="_stockModel.HowManyLeft" Label="Quantity"
+                                             Variant="Variant.Outlined" Required="true"
+                                             RequiredError="Quantity is required"
+                                             Min="0m"
+                                             For="@(() => _stockModel.HowManyLeft)"/>
+
+                            <MudSelect T="StockUnit" @bind-Value="_stockModel.Unit" Label="Unit"
+                                       Variant="Variant.Outlined"
+                                       Required="true" RequiredError="Unit is required"
+                                       For="@(() => _stockModel.Unit)"
+                                       AnchorOrigin="Origin.BottomCenter"
+                                       LockScroll="false">
+                                @foreach (StockUnit unit in Enum.GetValues(typeof(StockUnit)))
+                                {
+                                    <MudSelectItem T="StockUnit" Value="@unit">@unit.ToString()</MudSelectItem>
+                                }
+                            </MudSelect>
+
+                            <MudDatePicker @bind-Date="_expiryDate" Label="Expiry Date" Variant="Variant.Outlined"/>
+                            <MudTextField @bind-Value="_stockModel.BatchNumber" Label="Batch Number"
+                                          Variant="Variant.Outlined"
+                                          For="@(() => _stockModel.BatchNumber)"/>
+                            <MudTextField @bind-Value="_stockModel.WhereItsStored" Label="Storage Location"
+                                          Variant="Variant.Outlined"
+                                          For="@(() => _stockModel.WhereItsStored)"/>
+                            <MudNumericField @bind-Value="_stockModel.WarnWhenBelow" Label="Low Stock Warning Threshold"
+                                             Variant="Variant.Outlined" Min="0m"
+                                             For="@(() => _stockModel.WarnWhenBelow)"/>
+                        </div>
+                    </MudForm>
                 </MudStep>
             </ChildContent>
-            <ActionContent>
-                <MudButton OnClick="Cancel">Cancel</MudButton>
-                <MudButton Color="Color.Primary" OnClick="Submit" Disabled="_isSubmitting"
-                           Style="@(_stepper.ActiveIndex == 0 ? "display:none" : "")">
-                    @if (_isSubmitting)
-                    {
-                        <MudProgressCircular Size="Size.Small" Indeterminate="true"/>
-                    }
-                    else
-                    {
-                        <span>Add</span>
-                    }
-                </MudButton>
-            </ActionContent>
         </MudStepper>
     </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="Cancel">Cancel</MudButton>
+        <MudButton Color="Color.Primary" OnClick="Submit" Disabled="_isSubmitting">
+            @if (_isSubmitting)
+            {
+                <MudProgressCircular Size="Size.Small" Indeterminate="true"/>
+            }
+            else
+            {
+                <span>Add</span>
+            }
+        </MudButton>
+    </DialogActions>
 </MudDialog>
 
 @code {
     [CascadingParameter] private IMudDialogInstance MudDialog { get; set; } = null!;
 
     private MudStepper _stepper = null!;
+    private MudForm _medicationForm = null!;
+    private MudForm _stockForm = null!;
     private List<MedicationDto> _medications = new();
     private string _selectedOption = "existing";
     private Guid? _selectedMedicationId;
@@ -89,7 +155,7 @@
     private DateTime? _expiryDate;
 
     private NewMedicationModel _newMedication = new();
-    private StockModel _stockModel = new() { WarnWhenBelow = 5 };
+    private StockModel _stockModel = new() { WarnWhenBelow = 5, Unit = StockUnit.Pills };
 
     protected override async Task OnInitializedAsync()
     {
@@ -98,6 +164,20 @@
 
     private async Task Submit()
     {
+        // Validate current step
+        if (_stepper.ActiveIndex == 0)
+        {
+            await _medicationForm.Validate();
+            if (!_medicationForm.IsValid)
+                return;
+            await _stepper.ResetAsync();
+            return;
+        }
+
+        await _stockForm.Validate();
+        if (!_stockForm.IsValid)
+            return;
+
         _isSubmitting = true;
         try
         {
@@ -145,26 +225,31 @@
 
     private void Cancel()
     {
-        MudDialog.Cancel();
+        MudDialog.Close(DialogResult.Cancel());
+    }
+
+    private string FormatEnumName(string enumValue)
+    {
+        return System.Text.RegularExpressions.Regex.Replace(enumValue, "([a-z])([A-Z])", "$1 $2");
     }
 
     private class NewMedicationModel
     {
-        public string Name { get; set; } = "";
+        [Required] public string Name { get; set; } = "";
         public string? AlsoKnownAs { get; set; }
-        public string Form { get; set; } = "";
-        public decimal Strength { get; set; }
-        public string StrengthUnit { get; set; } = "mg";
-        public string HowToTake { get; set; } = "";
+        [Required] public DosageForm Form { get; set; } = DosageForm.Pill;
+        [Required] public decimal Strength { get; set; }
+        [Required] public StrengthUnit StrengthUnit { get; set; } = StrengthUnit.mg;
+        [Required] public Route HowToTake { get; set; } = Route.ByMouth;
     }
 
     private class StockModel
     {
-        public decimal HowManyLeft { get; set; }
-        public string Unit { get; set; } = "pills";
+        [Required] public decimal HowManyLeft { get; set; }
+        [Required] public StockUnit Unit { get; set; } = StockUnit.Pills;
         public string? BatchNumber { get; set; }
         public string? WhereItsStored { get; set; }
-        public decimal WarnWhenBelow { get; set; }
+        [Required] public decimal WarnWhenBelow { get; set; }
     }
 
 }

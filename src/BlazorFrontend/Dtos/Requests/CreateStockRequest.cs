@@ -1,9 +1,11 @@
-﻿namespace BlazorFrontend.Dtos.Requests;
+﻿using Infrastructure.Domain.Medications.Enums;
+
+namespace BlazorFrontend.Dtos.Requests;
 
 public record CreateStockRequest(
     Guid MedicationId,
     decimal HowManyLeft,
-    string Unit,
+    StockUnit Unit,
     DateTime? ExpiresOn,
     string? BatchNumber,
     string? WhereItsStored,

@@ -1,11 +1,14 @@
-﻿namespace BlazorFrontend.Dtos.Requests;
+﻿using Infrastructure.Domain.Medications.Enums;
+using Route = Infrastructure.Domain.Medications.Enums.Route;
+
+namespace BlazorFrontend.Dtos.Requests;
 
 public record CreateMedicationRequest(
     string Name,
     string? AlsoKnownAs,
-    string Form,
+    DosageForm Form,
     decimal Strength,
-    string StrengthUnit,
-    string HowToTake,
+    StrengthUnit StrengthUnit,
+    Route HowToTake,
     string? ComesFrom
 );

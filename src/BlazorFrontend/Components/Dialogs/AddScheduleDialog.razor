@@ -1,6 +1,8 @@
-﻿@using BlazorFrontend.Dtos
+﻿@using System.ComponentModel.DataAnnotations
+@using BlazorFrontend.Dtos
 @using BlazorFrontend.Dtos.Requests
 @using BlazorFrontend.Services
+@using Infrastructure.Domain.Medications.Enums
 @inject MedicationService MedicationService
 @inject ScheduleService ScheduleService
 @inject NavigationManager Navigation
@@ -174,13 +176,14 @@
 
     private class NewMedicationModel
     {
-        public string Name { get; set; } = "";
+        [Required] public string Name { get; set; } = "";
         public string? AlsoKnownAs { get; set; }
-        public string Form { get; set; } = "";
-        public decimal Strength { get; set; }
-        public string StrengthUnit { get; set; } = "mg";
-        public string HowToTake { get; set; } = "";
+        [Required] public DosageForm Form { get; set; } = DosageForm.Pill;
+        [Required] public decimal Strength { get; set; }
+        [Required] public StrengthUnit StrengthUnit { get; set; } = StrengthUnit.mg;
+        [Required] public Route HowToTake { get; set; } = Route.ByMouth;
     }
+
 
     private class ScheduleModel
     {
