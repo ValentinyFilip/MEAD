@@ -1,6 +1,5 @@
 ﻿namespace ApiService.Features.MedicationSchedule.Queries.MedicationWithScheduleDetail;
 
-public class MedicationWithScheduleDetail
-{
-    
-}
+public sealed record MedicationWithScheduleDetailRequest(
+    Guid Id
+);
