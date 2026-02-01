@@ -1,0 +1,188 @@
+﻿@using BlazorFrontend.Dtos
+@using BlazorFrontend.Dtos.Requests
+@using BlazorFrontend.Services
+@inject MedicationService MedicationService
+@inject ScheduleService ScheduleService
+
+<MudDialog>
+    <DialogContent>
+        <MudStepper @ref="_stepper" Linear="true">
+            <ChildContent>
+                <MudStep Title="Select Medication">
+                    <div class="d-flex flex-column" style="gap: 1rem;">
+                        <MudRadioGroup @bind-Value="_selectedOption">
+                            <MudRadio Value="@("existing")">Select from existing medications</MudRadio>
+                            <MudRadio Value="@("new")">Create new medication</MudRadio>
+                        </MudRadioGroup>
+
+                        @if (_selectedOption == "existing")
+                        {
+                            <MudSelect @bind-Value="_selectedMedicationId" Label="Medication" Variant="Variant.Outlined"
+                                       Required="true">
+                                @foreach (var med in _medications)
+                                {
+                                    <MudSelectItem Value="@med.Id">@med.Name (@med.Form)</MudSelectItem>
+                                }
+                            </MudSelect>
+                        }
+                        else if (_selectedOption == "new")
+                        {
+                            <MudTextField @bind-Value="_newMedication.Name" Label="Name" Variant="Variant.Outlined"
+                                          Required="true"/>
+                            <MudTextField @bind-Value="_newMedication.AlsoKnownAs" Label="Also Known As"
+                                          Variant="Variant.Outlined"/>
+                            <MudTextField @bind-Value="_newMedication.Form" Label="Form" Variant="Variant.Outlined"
+                                          Required="true"/>
+                            <MudNumericField @bind-Value="_newMedication.Strength" Label="Strength"
+                                             Variant="Variant.Outlined" Required="true"/>
+                            <MudTextField @bind-Value="_newMedication.StrengthUnit" Label="Unit"
+                                          Variant="Variant.Outlined" Required="true"/>
+                            <MudTextField @bind-Value="_newMedication.HowToTake" Label="How to Take"
+                                          Variant="Variant.Outlined" Required="true"/>
+                        }
+                    </div>
+                </MudStep>
+
+                <MudStep Title="Schedule Details">
+                    <div class="d-flex flex-column" style="gap: 1rem;">
+                        <MudNumericField @bind-Value="_scheduleModel.AmountPerTime" Label="Amount per dose"
+                                         Variant="Variant.Outlined" Required="true"/>
+                        <MudTextField @bind-Value="_scheduleModel.AmountUnit" Label="Unit (pill, teaspoon, etc.)"
+                                      Variant="Variant.Outlined" Required="true"/>
+                        <MudTextField @bind-Value="_scheduleModel.HowOften" Label="Frequency (Daily, Weekly, etc.)"
+                                      Variant="Variant.Outlined" Required="true"/>
+
+                        <MudText Typo="Typo.body2">Dosage Times</MudText>
+                        @foreach (var (time, index) in _scheduleModel.Times.Select((t, i) => (t, i)))
+                        {
+                            <div class="d-flex" style="gap: 0.5rem;">
+                                <MudTextField @bind-Value="_scheduleModel.Times[index]" Label=@($"Time {index + 1}")
+                                              Variant="Variant.Outlined"/>
+                                <MudIconButton Icon="@Icons.Material.Filled.Delete"
+                                               OnClick="@(() => RemoveTime(index))"/>
+                            </div>
+                        }
+                        <MudButton StartIcon="@Icons.Material.Filled.Add" OnClick="AddTime" Variant="Variant.Outlined">
+                            Add Time
+                        </MudButton>
+
+                        <MudDatePicker @bind-Date="_startDate" Label="Start Date" Variant="Variant.Outlined"
+                                       Required="true"/>
+                        <MudDatePicker @bind-Date="_endDate" Label="End Date (optional)" Variant="Variant.Outlined"/>
+                    </div>
+                </MudStep>
+            </ChildContent>
+            <ActionContent>
+                <MudButton OnClick="Cancel">Cancel</MudButton>
+                <MudButton Color="Color.Primary" OnClick="Submit" Disabled="_isSubmitting"
+                           Style="@(_stepper.ActiveIndex == 0 ? "display:none" : "")">
+                    @if (_isSubmitting)
+                    {
+                        <MudProgressCircular Size="Size.Small" Indeterminate="true"/>
+                    }
+                    else
+                    {
+                        <span>Add</span>
+                    }
+                </MudButton>
+            </ActionContent>
+        </MudStepper>
+    </DialogContent>
+</MudDialog>
+
+@code {
+    [CascadingParameter] private IMudDialogInstance MudDialog { get; set; } = null!;
+
+    private MudStepper _stepper = null!;
+    private List<MedicationDto> _medications = new();
+    private string _selectedOption = "existing";
+    private Guid? _selectedMedicationId;
+    private bool _isSubmitting;
+    private DateTime? _startDate = DateTime.Today;
+    private DateTime? _endDate;
+
+    private NewMedicationModel _newMedication = new();
+    private ScheduleModel _scheduleModel = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        _medications = await MedicationService.GetMedicationsAsync();
+    }
+
+    private void AddTime()
+    {
+        _scheduleModel.Times.Add("08:00");
+    }
+
+    private void RemoveTime(int index)
+    {
+        _scheduleModel.Times.RemoveAt(index);
+    }
+
+    private async Task Submit()
+    {
+        _isSubmitting = true;
+        try
+        {
+            Guid medicationId;
+
+            if (_selectedOption == "new")
+            {
+                var newMed = await MedicationService.CreateMedicationAsync(new CreateMedicationRequest(
+                    _newMedication.Name,
+                    _newMedication.AlsoKnownAs,
+                    _newMedication.Form,
+                    _newMedication.Strength,
+                    _newMedication.StrengthUnit,
+                    _newMedication.HowToTake,
+                    null
+                ));
+                medicationId = newMed!.Id;
+            }
+            else
+            {
+                medicationId = _selectedMedicationId!.Value;
+            }
+
+            await ScheduleService.AddScheduleAsync(new CreateScheduleRequest(
+                medicationId,
+                _scheduleModel.AmountPerTime,
+                _scheduleModel.AmountUnit,
+                _scheduleModel.HowOften,
+                _scheduleModel.Times,
+                _startDate!.Value,
+                _endDate
+            ));
+
+            MudDialog.Close(DialogResult.Ok(true));
+        }
+        finally
+        {
+            _isSubmitting = false;
+        }
+    }
+
+    private void Cancel()
+    {
+        MudDialog.Cancel();
+    }
+
+    private class NewMedicationModel
+    {
+        public string Name { get; set; } = "";
+        public string? AlsoKnownAs { get; set; }
+        public string Form { get; set; } = "";
+        public decimal Strength { get; set; }
+        public string StrengthUnit { get; set; } = "mg";
+        public string HowToTake { get; set; } = "";
+    }
+
+    private class ScheduleModel
+    {
+        public decimal AmountPerTime { get; set; } = 1;
+        public string AmountUnit { get; set; } = "pill";
+        public string HowOften { get; set; } = "Daily";
+        public List<string> Times { get; set; } = new() { "08:00" };
+    }
+
+}

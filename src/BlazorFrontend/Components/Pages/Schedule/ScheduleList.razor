@@ -1,0 +1,205 @@
+﻿@page "/schedules"
+@using BlazorFrontend.Components.Dialogs
+@using BlazorFrontend.Dtos
+@using BlazorFrontend.Services
+@rendermode InteractiveServer
+@inject ScheduleService ScheduleService
+@inject IDialogService DialogService
+@inject ISnackbar Snackbar
+
+<PageTitle>Schedules - Mead</PageTitle>
+
+<div class="d-flex justify-space-between align-center mb-6">
+    <div>
+        <MudText Typo="Typo.h3">Medication Schedules</MudText>
+        <MudText Typo="Typo.body2" Color="Color.Secondary">Manage your medication schedules</MudText>
+    </div>
+    <MudFab Color="Color.Primary"
+            StartIcon="@Icons.Material.Filled.Add"
+            OnClick="OpenAddDialog"
+            Label="Add Schedule"/>
+</div>
+
+@if (_isLoading)
+{
+    <MudProgressLinear Color="Color.Primary" Indeterminate="true"/>
+}
+else if (_hasError)
+{
+    <MudPaper Elevation="0" Class="pa-16 d-flex flex-column align-center">
+        <MudIcon Icon="@Icons.Material.Filled.ErrorOutline" Size="Size.Large" Color="Color.Error" Class="mb-4"
+                 Style="font-size: 4rem;"/>
+        <MudText Typo="Typo.h5" Class="mb-2">Unable to Load Schedules</MudText>
+        <MudText Typo="Typo.body1" Color="Color.Secondary" Class="mb-4">@_errorMessage</MudText>
+        <MudButton Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Filled.Refresh"
+                   OnClick="LoadSchedules">
+            Try Again
+        </MudButton>
+    </MudPaper>
+}
+else if (_schedules.Count == 0)
+{
+    <MudPaper Elevation="0" Class="pa-16 d-flex flex-column align-center">
+        <MudIcon Icon="@Icons.Material.Filled.Schedule" Size="Size.Large" Color="Color.Primary" Class="mb-4"
+                 Style="font-size: 4rem;"/>
+        <MudText Typo="Typo.h5" Class="mb-2">No schedules yet</MudText>
+        <MudText Typo="Typo.body1" Color="Color.Secondary" Class="mb-4">Create your first medication schedule</MudText>
+        <MudButton Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Filled.Add"
+                   OnClick="OpenAddDialog">
+            Add First Schedule
+        </MudButton>
+    </MudPaper>
+}
+else
+{
+    <MudGrid>
+        @foreach (var schedule in _schedules.OrderByDescending(s => s.IsActive).ThenBy(s => s.StartsOn))
+        {
+            <MudItem xs="12" md="6" lg="4">
+                <MudCard Elevation="2">
+                    <MudCardHeader>
+                        <CardHeaderContent>
+                            <MudText Typo="Typo.h6">@schedule.MedicationName</MudText>
+                            <MudText Typo="Typo.body2" Color="Color.Secondary">
+                                @schedule.AmountPerTime @schedule.AmountUnit · @schedule.HowOften
+                            </MudText>
+                        </CardHeaderContent>
+                        <CardHeaderActions>
+                            @if (schedule.IsActive && !schedule.IsExpired)
+                            {
+                                <MudChip T="string" Color="Color.Success" Size="Size.Small"
+                                         Icon="@Icons.Material.Filled.CheckCircle">Active
+                                </MudChip>
+                            }
+                            else if (schedule.IsExpired)
+                            {
+                                <MudChip T="string" Color="Color.Default" Size="Size.Small"
+                                         Icon="@Icons.Material.Filled.EventBusy">Expired
+                                </MudChip>
+                            }
+                            else
+                            {
+                                <MudChip T="string" Color="Color.Warning" Size="Size.Small"
+                                         Icon="@Icons.Material.Filled.PauseCircle">Inactive
+                                </MudChip>
+                            }
+                        </CardHeaderActions>
+                    </MudCardHeader>
+                    <MudCardContent>
+                        <MudStack Spacing="2">
+                            <div class="d-flex align-center">
+                                <MudIcon Icon="@Icons.Material.Filled.AccessTime" Size="Size.Small" Class="mr-2"/>
+                                <MudText Typo="Typo.body2">
+                                    <strong>@schedule.TimesPerDay</strong> times per day
+                                </MudText>
+                            </div>
+                            <div class="d-flex align-center">
+                                <MudIcon Icon="@Icons.Material.Filled.CalendarMonth" Size="Size.Small" Class="mr-2"/>
+                                <MudText Typo="Typo.body2">
+                                    Starts: <strong>@schedule.StartsOn.ToString("MMM dd, yyyy")</strong>
+                                </MudText>
+                            </div>
+                            @if (schedule.EndsOn.HasValue)
+                            {
+                                <div class="d-flex align-center">
+                                    <MudIcon Icon="@Icons.Material.Filled.Event" Size="Size.Small" Class="mr-2"/>
+                                    <MudText Typo="Typo.body2">
+                                        Ends: <strong>@schedule.EndsOn.Value.ToString("MMM dd, yyyy")</strong>
+                                    </MudText>
+                                </div>
+                            }
+                        </MudStack>
+                    </MudCardContent>
+                    <MudCardActions>
+                        <MudSpacer/>
+                        <MudIconButton Icon="@Icons.Material.Filled.Delete"
+                                       Color="Color.Error"
+                                       Size="Size.Small"
+                                       OnClick="@(() => DeleteSchedule(schedule.Id))"/>
+                    </MudCardActions>
+                </MudCard>
+            </MudItem>
+        }
+    </MudGrid>
+}
+
+@code {
+    private List<ScheduleDto> _schedules = new();
+    private bool _isLoading = true;
+    private bool _hasError = false;
+    private string _errorMessage = "";
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await LoadSchedules();
+            StateHasChanged();
+        }
+    }
+
+    private async Task LoadSchedules()
+    {
+        _isLoading = true;
+        _hasError = false;
+        _errorMessage = "";
+
+        try
+        {
+            _schedules = await ScheduleService.GetSchedulesAsync();
+        }
+        catch (HttpRequestException ex)
+        {
+            _hasError = true;
+            _errorMessage = ex.StatusCode == System.Net.HttpStatusCode.NotFound
+                ? "Schedules endpoint not found. Please check your API configuration."
+                : "Unable to connect to the server. Please check your connection.";
+        }
+        catch (Exception ex)
+        {
+            _hasError = true;
+            _errorMessage = "An unexpected error occurred while loading schedules.";
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+
+    private async Task OpenAddDialog()
+    {
+        var options = new DialogOptions { MaxWidth = MaxWidth.Medium, FullWidth = true };
+        var dialog = await DialogService.ShowAsync<AddScheduleDialog>("Add Schedule", options);
+        var result = await dialog.Result;
+
+        if (!result.Canceled)
+        {
+            await LoadSchedules();
+            Snackbar.Add("Schedule added successfully", Severity.Success);
+        }
+    }
+
+    private async Task DeleteSchedule(Guid scheduleId)
+    {
+        bool? confirm = await DialogService.ShowMessageBox(
+            "Delete Schedule",
+            "Are you sure you want to delete this schedule?",
+            yesText: "Delete",
+            cancelText: "Cancel");
+
+        if (confirm == true)
+        {
+            try
+            {
+                await ScheduleService.DeleteScheduleAsync(scheduleId);
+                await LoadSchedules();
+                Snackbar.Add("Schedule deleted", Severity.Success);
+            }
+            catch (Exception)
+            {
+                Snackbar.Add("Failed to delete schedule", Severity.Error);
+            }
+        }
+    }
+
+}

@@ -17,6 +17,10 @@ builder.Services.AddScoped<LocalStorageService>();
 builder.Services.AddScoped<IAuthState, BrowserAuthState>();
 builder.Services.AddScoped<AuthenticatedHttpMessageHandler>();
 
+builder.Services.AddScoped<MedicationService>();
+builder.Services.AddScoped<WarehouseService>();
+builder.Services.AddScoped<ScheduleService>();
+
 builder.Services.AddMudServices(config =>
 {
     config.SnackbarConfiguration.PositionClass = Defaults.Classes.Position.BottomRight;

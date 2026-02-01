@@ -1,0 +1,217 @@
+﻿@page "/warehouse"
+@using BlazorFrontend.Components.Dialogs
+@using BlazorFrontend.Dtos
+@using BlazorFrontend.Services
+@rendermode InteractiveServer
+@inject WarehouseService WarehouseService
+@inject IDialogService DialogService
+@inject ISnackbar Snackbar
+
+<PageTitle>Warehouse - Mead</PageTitle>
+
+<div class="d-flex justify-space-between align-center mb-6">
+    <div>
+        <MudText Typo="Typo.h3">Warehouse</MudText>
+        <MudText Typo="Typo.body2" Color="Color.Secondary">Manage your medication stock</MudText>
+    </div>
+    <MudFab Color="Color.Primary"
+            StartIcon="@Icons.Material.Filled.Add"
+            OnClick="OpenAddDialog"
+            Label="Add Stock"/>
+</div>
+
+@if (_isLoading)
+{
+    <MudProgressLinear Color="Color.Primary" Indeterminate="true"/>
+}
+else if (_hasError)
+{
+    <MudPaper Elevation="0" Class="pa-16 d-flex flex-column align-center">
+        <MudIcon Icon="@Icons.Material.Filled.ErrorOutline" Size="Size.Large" Color="Color.Error" Class="mb-4"
+                 Style="font-size: 4rem;"/>
+        <MudText Typo="Typo.h5" Class="mb-2">Unable to Load Stock</MudText>
+        <MudText Typo="Typo.body1" Color="Color.Secondary" Class="mb-4">@_errorMessage</MudText>
+        <MudButton Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Filled.Refresh"
+                   OnClick="LoadStocks">
+            Try Again
+        </MudButton>
+    </MudPaper>
+}
+else if (_stocks.Count == 0)
+{
+    <MudPaper Elevation="0" Class="pa-16 d-flex flex-column align-center">
+        <MudIcon Icon="@Icons.Material.Filled.Inventory" Size="Size.Large" Color="Color.Primary" Class="mb-4"
+                 Style="font-size: 4rem;"/>
+        <MudText Typo="Typo.h5" Class="mb-2">No stock items yet</MudText>
+        <MudText Typo="Typo.body1" Color="Color.Secondary" Class="mb-4">Start tracking your medication inventory
+        </MudText>
+        <MudButton Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Filled.Add"
+                   OnClick="OpenAddDialog">
+            Add First Stock Item
+        </MudButton>
+    </MudPaper>
+}
+else
+{
+    <MudTable Items="@_stocks" Hover="true" Breakpoint="Breakpoint.Sm" Elevation="2">
+        <HeaderContent>
+            <MudTh>Medication</MudTh>
+            <MudTh>Quantity</MudTh>
+            <MudTh>Location</MudTh>
+            <MudTh>Batch</MudTh>
+            <MudTh>Expires</MudTh>
+            <MudTh>Status</MudTh>
+            <MudTh></MudTh>
+        </HeaderContent>
+        <RowTemplate>
+            <MudTd DataLabel="Medication">
+                <div>
+                    <MudText Typo="Typo.body1"><strong>@context.MedicationName</strong></MudText>
+                    @if (!string.IsNullOrEmpty(context.AlsoKnownAs))
+                    {
+                        <MudText Typo="Typo.caption" Color="Color.Secondary">@context.AlsoKnownAs</MudText>
+                    }
+                </div>
+            </MudTd>
+            <MudTd DataLabel="Quantity">
+                <MudText Typo="Typo.body2">@context.HowManyLeft @context.Unit</MudText>
+                @if (context.WarnWhenBelow > 0)
+                {
+                    <MudText Typo="Typo.caption" Color="Color.Secondary">Warn below: @context.WarnWhenBelow</MudText>
+                }
+            </MudTd>
+            <MudTd DataLabel="Location">
+                <MudText Typo="Typo.body2">@(context.WhereItsStored ?? "-")</MudText>
+            </MudTd>
+            <MudTd DataLabel="Batch">
+                <MudText Typo="Typo.body2">@(context.BatchNumber ?? "-")</MudText>
+            </MudTd>
+            <MudTd DataLabel="Expires">
+                @if (context.ExpiresOn.HasValue)
+                {
+                    var daysUntilExpiry = (context.ExpiresOn.Value - DateTime.UtcNow).Days;
+                    var isExpiringSoon = daysUntilExpiry <= 30 && daysUntilExpiry > 0;
+                    var isExpired = daysUntilExpiry <= 0;
+
+                    <MudText Typo="Typo.body2"
+                             Color="@(isExpired ? Color.Error : (isExpiringSoon ? Color.Warning : Color.Default))">
+                        @context.ExpiresOn.Value.ToString("MMM dd, yyyy")
+                    </MudText>
+                    @if (isExpiringSoon)
+                    {
+                        <MudText Typo="Typo.caption" Color="Color.Warning">(@daysUntilExpiry days left)</MudText>
+                    }
+                    else if (isExpired)
+                    {
+                        <MudText Typo="Typo.caption" Color="Color.Error">(Expired)</MudText>
+                    }
+                }
+                else
+                {
+                    <MudText Typo="Typo.body2">-</MudText>
+                }
+            </MudTd>
+            <MudTd DataLabel="Status">
+                @if (context.IsLowStock)
+                {
+                    <MudChip T="string" Color="Color.Warning" Size="Size.Small" Icon="@Icons.Material.Filled.Warning">
+                        Low Stock
+                    </MudChip>
+                }
+                else
+                {
+                    <MudChip T="string" Color="Color.Success" Size="Size.Small"
+                             Icon="@Icons.Material.Filled.CheckCircle">In Stock
+                    </MudChip>
+                }
+            </MudTd>
+            <MudTd>
+                <MudIconButton Icon="@Icons.Material.Filled.Delete"
+                               Size="Size.Small"
+                               Color="Color.Error"
+                               OnClick="@(() => DeleteStock(context.StockId))"/>
+            </MudTd>
+        </RowTemplate>
+    </MudTable>
+}
+
+@code {
+    private List<StockDto> _stocks = new();
+    private bool _isLoading = true;
+    private bool _hasError = false;
+    private string _errorMessage = "";
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await LoadStocks();
+            StateHasChanged();
+        }
+    }
+
+    private async Task LoadStocks()
+    {
+        _isLoading = true;
+        _hasError = false;
+        _errorMessage = "";
+
+        try
+        {
+            _stocks = await WarehouseService.GetWarehouseStocksAsync();
+        }
+        catch (HttpRequestException ex)
+        {
+            _hasError = true;
+            _errorMessage = ex.StatusCode == System.Net.HttpStatusCode.NotFound
+                ? "Warehouse endpoint not found. Please check your API configuration."
+                : "Unable to connect to the server. Please check your connection.";
+        }
+        catch (Exception ex)
+        {
+            _hasError = true;
+            _errorMessage = "An unexpected error occurred while loading stock data.";
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+
+    private async Task OpenAddDialog()
+    {
+        var options = new DialogOptions { MaxWidth = MaxWidth.Medium, FullWidth = true };
+        var dialog = await DialogService.ShowAsync<AddWarehouseDialog>("Add Stock", options);
+        var result = await dialog.Result;
+
+        if (!result.Canceled)
+        {
+            await LoadStocks();
+            Snackbar.Add("Stock added successfully", Severity.Success);
+        }
+    }
+
+    private async Task DeleteStock(Guid stockId)
+    {
+        bool? confirm = await DialogService.ShowMessageBox(
+            "Delete Stock",
+            "Are you sure you want to delete this stock item?",
+            yesText: "Delete",
+            cancelText: "Cancel");
+
+        if (confirm == true)
+        {
+            try
+            {
+                await WarehouseService.DeleteStockAsync(stockId);
+                await LoadStocks();
+                Snackbar.Add("Stock deleted", Severity.Success);
+            }
+            catch (Exception)
+            {
+                Snackbar.Add("Failed to delete stock", Severity.Error);
+            }
+        }
+    }
+
+}

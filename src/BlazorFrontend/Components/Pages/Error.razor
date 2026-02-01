@@ -1,65 +1,82 @@
 ﻿@page "/Error"
+@rendermode InteractiveServer
 @using System.Diagnostics
 @inject NavigationManager Navigation
 
-<PageTitle>Error</PageTitle>
+<PageTitle>Error - Mead</PageTitle>
 
-<MudContainer MaxWidth="MaxWidth.Small" Class="d-flex align-center" Style="min-height: 100vh;">
-    <MudStack Spacing="4" Width="100%">
-        <MudPaper Elevation="8" Class="pa-6">
-            <MudStack Spacing="3" AlignItems="AlignItems.Center">
-                <MudIcon Icon="@Icons.Material.Filled.Error" Color="Color.Error" Style="font-size: 6rem;"/>
+<MudContainer MaxWidth="MaxWidth.Medium" Class="d-flex align-center justify-center" Style="min-height: 100vh;">
+    <MudStack Spacing="6" AlignItems="AlignItems.Center" Width="100%">
+        <MudStack Row="true" Spacing="2" AlignItems="AlignItems.Center">
+            <MudIcon Icon="@Icons.Material.Filled.Error" Color="Color.Error" Style="font-size: 6rem;"/>
+        </MudStack>
 
-                <MudText Typo="Typo.h4" Align="Align.Center" Color="Color.Error">
-                    Oops! Something went wrong
-                </MudText>
+        <MudText Typo="Typo.h3" Align="Align.Center">
+            Something went wrong
+        </MudText>
 
-                <MudText Typo="Typo.body1" Align="Align.Center" Color="Color.Secondary">
-                    An error occurred while processing your request.
-                </MudText>
+        <MudText Typo="Typo.body1" Align="Align.Center" Color="Color.Secondary" Style="max-width: 500px;">
+            We encountered an unexpected error while processing your request. Don't worry, your medication data is safe.
+        </MudText>
 
-                @if (ShowRequestId)
-                {
-                    <MudChip T="string" Color="Color.Error" Size="Size.Small">
-                        Request ID: @RequestId
-                    </MudChip>
-                }
+        @if (ShowRequestId)
+        {
+            <MudChip T="string" Color="Color.Default" Size="Size.Small">
+                Request ID: @RequestId
+            </MudChip>
+        }
 
-                <MudStack Row="true" Spacing="2" Class="mt-2">
-                    <MudButton
-                        Variant="Variant.Filled"
-                        Color="Color.Primary"
-                        StartIcon="@Icons.Material.Filled.Home"
-                        Href="/">
-                        Home
-                    </MudButton>
+        <MudPaper Elevation="2" Class="pa-6 mt-4">
+            <MudStack Spacing="3">
+                <MudButton
+                    Variant="Variant.Filled"
+                    Color="Color.Primary"
+                    StartIcon="@Icons.Material.Filled.Home"
+                    Href="/"
+                    FullWidth="true"
+                    Size="Size.Large">
+                    Back to Dashboard
+                </MudButton>
 
-                    <MudButton
-                        Variant="Variant.Outlined"
-                        Color="Color.Primary"
-                        StartIcon="@Icons.Material.Filled.Refresh"
-                        OnClick="Reload">
-                        Reload
-                    </MudButton>
-                </MudStack>
+                <MudButton
+                    Variant="Variant.Outlined"
+                    Color="Color.Primary"
+                    StartIcon="@Icons.Material.Filled.Refresh"
+                    OnClick="Reload"
+                    FullWidth="true"
+                    Size="Size.Large">
+                    Try Again
+                </MudButton>
+
+                <MudButton
+                    Variant="Variant.Outlined"
+                    Color="Color.Primary"
+                    StartIcon="@Icons.Material.Filled.Inventory"
+                    Href="/warehouse"
+                    FullWidth="true"
+                    Size="Size.Large">
+                    View Warehouse
+                </MudButton>
             </MudStack>
         </MudPaper>
 
-        <MudExpansionPanels>
+        <MudExpansionPanels Elevation="2" Class="mt-4" Style="width: 100%;">
             <MudExpansionPanel Text="Development Information" Icon="@Icons.Material.Filled.Info">
                 <MudStack Spacing="2">
                     <MudText Typo="Typo.body2">
                         Swapping to <strong>Development</strong> environment will display more detailed information
-                        about the error.
+                        about the error that occurred.
                     </MudText>
 
-                    <MudAlert Severity="Severity.Warning" Dense="true">
-                        The Development environment shouldn't be enabled for deployed applications.
+                    <MudAlert Severity="Severity.Warning" Variant="Variant.Outlined" Dense="true">
+                        <strong>Warning:</strong> The Development environment shouldn't be enabled for deployed
+                        applications.
+                        It can result in displaying sensitive information to end users.
                     </MudAlert>
 
                     <MudText Typo="Typo.body2" Color="Color.Secondary">
-                        Set <code>ASPNETCORE_ENVIRONMENT</code> to <code>Development</code> and restart the app for
-                        detailed errors.
+                        For local development, set the <code>ASPNETCORE_ENVIRONMENT</code> environment variable to
+                        <code>Development</code> and restart the app to see detailed error information.
                     </MudText>
                 </MudStack>
             </MudExpansionPanel>

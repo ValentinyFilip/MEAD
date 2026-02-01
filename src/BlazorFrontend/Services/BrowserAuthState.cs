@@ -3,10 +3,10 @@
 public sealed class BrowserAuthState(LocalStorageService storage) : IAuthState
 {
     public Task<string?> GetUserIdAsync() =>
-        storage.GetItemAsync("auth_userId").AsTask();
+        storage.GetItemAsync("auth_userId");
 
     public Task<string?> GetAccessTokenAsync() =>
-        storage.GetItemAsync("auth_token").AsTask();
+        storage.GetItemAsync("auth_token");
 
     public async Task SetAuthAsync(string userId, string accessToken)
     {

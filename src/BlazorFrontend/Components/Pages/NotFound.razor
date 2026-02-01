@@ -1,5 +1,6 @@
 ﻿@page "/404"
 @page "/{*path:nonfile}"
+@rendermode InteractiveServer
 @inject NavigationManager NavigationManager
 
 <MudContainer MaxWidth="MaxWidth.Medium" Class="d-flex flex-column align-center justify-center"
@@ -9,7 +10,7 @@
             <MudText Typo="Typo.h1" Style="font-size: 8rem; font-weight: 900;">4</MudText>
             <MudIcon
                 Icon="@Icons.Material.Filled.SentimentVeryDissatisfied"
-                Color="Color.Warning"
+                Color="Color.Primary"
                 Style="font-size: 8rem;"/>
             <MudText Typo="Typo.h1" Style="font-size: 8rem; font-weight: 900;">4</MudText>
         </MudStack>
@@ -23,32 +24,39 @@
             Let's get you back to where you need to be!
         </MudText>
 
-        <MudCard Elevation="4" Class="pa-4 mt-4"
-                 Style="background: linear-gradient(135deg, var(--mud-palette-primary) 0%, var(--mud-palette-secondary) 100%);">
-            <MudCardContent>
-                <MudStack Spacing="3">
-                    <MudButton
-                        Variant="Variant.Filled"
-                        Color="Color.Surface"
-                        StartIcon="@Icons.Material.Filled.Home"
-                        OnClick="GoHome"
-                        FullWidth="true"
-                        Size="Size.Large">
-                        Back to Dashboard
-                    </MudButton>
+        <MudPaper Elevation="2" Class="pa-6 mt-4">
+            <MudStack Spacing="3">
+                <MudButton
+                    Variant="Variant.Filled"
+                    Color="Color.Primary"
+                    StartIcon="@Icons.Material.Filled.Home"
+                    OnClick="GoHome"
+                    FullWidth="true"
+                    Size="Size.Large">
+                    Back to Dashboard
+                </MudButton>
 
-                    <MudButton
-                        Variant="Variant.Outlined"
-                        Style="border-color: white; color: white;"
-                        StartIcon="@Icons.Material.Filled.Medication"
-                        Href="/medications"
-                        FullWidth="true"
-                        Size="Size.Large">
-                        View Medications
-                    </MudButton>
-                </MudStack>
-            </MudCardContent>
-        </MudCard>
+                <MudButton
+                    Variant="Variant.Outlined"
+                    Color="Color.Primary"
+                    StartIcon="@Icons.Material.Filled.Inventory"
+                    Href="/warehouse"
+                    FullWidth="true"
+                    Size="Size.Large">
+                    View Warehouse
+                </MudButton>
+
+                <MudButton
+                    Variant="Variant.Outlined"
+                    Color="Color.Primary"
+                    StartIcon="@Icons.Material.Filled.Schedule"
+                    Href="/schedules"
+                    FullWidth="true"
+                    Size="Size.Large">
+                    View Schedules
+                </MudButton>
+            </MudStack>
+        </MudPaper>
 
         <MudChip T="string" Color="Color.Default" Size="Size.Small">
             Error Code: 404 | Path: @Path

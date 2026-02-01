@@ -1,0 +1,28 @@
+﻿@page "/logout"
+@using BlazorFrontend.Services
+@inject IHttpClientFactory HttpClientFactory
+@inject NavigationManager Navigation
+@inject IAuthState AuthState
+@inject LocalStorageService Storage
+@inject ISnackbar Snackbar
+
+@code {
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            var client = HttpClientFactory.CreateClient("AuthApi");
+            await client.PostAsync("auth/logout", content: null);
+            await AuthState.ClearAsync();
+            Snackbar.Add("Logged out successfully", Severity.Success);
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add("Logout failed. Redirecting anyway...", Severity.Warning);
+        }
+
+        Navigation.NavigateTo("/login", forceLoad: true);
+    }
+
+}

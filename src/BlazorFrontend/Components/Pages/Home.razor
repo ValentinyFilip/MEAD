@@ -1,0 +1,143 @@
+﻿@page "/"
+@using BlazorFrontend.Services
+@rendermode InteractiveServer
+@inject WarehouseService WarehouseService
+@inject ScheduleService ScheduleService
+@inject MedicationService MedicationService
+
+
+@if (!_initialized)
+{
+    <MudProgressCircular Color="Color.Primary" Indeterminate="true"/>
+}
+else
+{
+    <PageTitle>Dashboard - Mead</PageTitle>
+
+    <MudText Typo="Typo.h3" GutterBottom="true">Dashboard</MudText>
+    <MudText Typo="Typo.body1" Class="mb-6">Welcome to your medication tracking system</MudText>
+
+    <MudGrid>
+        <MudItem xs="12" md="6">
+            <MudCard Elevation="2">
+                <MudCardHeader>
+                    <CardHeaderContent>
+                        <MudText Typo="Typo.h6">Warehouse Stock</MudText>
+                    </CardHeaderContent>
+                    <CardHeaderActions>
+                        <MudIconButton Icon="@Icons.Material.Filled.Inventory" Color="Color.Primary"/>
+                    </CardHeaderActions>
+                </MudCardHeader>
+                <MudCardContent>
+                    <MudText Typo="Typo.h3">@_stockCount</MudText>
+                    <MudText Typo="Typo.body2">Total items in stock</MudText>
+                    @if (_lowStockCount > 0)
+                    {
+                        <MudChip T="string" Color="Color.Warning" Size="Size.Small" Class="mt-2">
+                            @_lowStockCount low stock items
+                        </MudChip>
+                    }
+                </MudCardContent>
+                <MudCardActions>
+                    <MudButton Href="/warehouse" Variant="Variant.Text" Color="Color.Primary">View All</MudButton>
+                </MudCardActions>
+            </MudCard>
+        </MudItem>
+
+        <MudItem xs="12" md="6">
+            <MudCard Elevation="2">
+                <MudCardHeader>
+                    <CardHeaderContent>
+                        <MudText Typo="Typo.h6">Active Schedules</MudText>
+                    </CardHeaderContent>
+                    <CardHeaderActions>
+                        <MudIconButton Icon="@Icons.Material.Filled.Schedule" Color="Color.Primary"/>
+                    </CardHeaderActions>
+                </MudCardHeader>
+                <MudCardContent>
+                    <MudText Typo="Typo.h3">@_activeSchedulesCount</MudText>
+                    <MudText Typo="Typo.body2">Medications scheduled</MudText>
+                </MudCardContent>
+                <MudCardActions>
+                    <MudButton Href="/schedules" Variant="Variant.Text" Color="Color.Primary">View All</MudButton>
+                </MudCardActions>
+            </MudCard>
+        </MudItem>
+
+        <MudItem xs="12" md="6">
+            <MudCard Elevation="2">
+                <MudCardHeader>
+                    <CardHeaderContent>
+                        <MudText Typo="Typo.h6">Total Medications</MudText>
+                    </CardHeaderContent>
+                    <CardHeaderActions>
+                        <MudIconButton Icon="@Icons.Material.Filled.Medication" Color="Color.Primary"/>
+                    </CardHeaderActions>
+                </MudCardHeader>
+                <MudCardContent>
+                    <MudText Typo="Typo.h3">@_totalMedications</MudText>
+                    <MudText Typo="Typo.body2">In your library</MudText>
+                </MudCardContent>
+            </MudCard>
+        </MudItem>
+
+        <MudItem xs="12" md="6">
+            <MudCard Elevation="2">
+                <MudCardHeader>
+                    <CardHeaderContent>
+                        <MudText Typo="Typo.h6">Today's Doses</MudText>
+                    </CardHeaderContent>
+                    <CardHeaderActions>
+                        <MudIconButton Icon="@Icons.Material.Filled.CalendarToday" Color="Color.Primary"/>
+                    </CardHeaderActions>
+                </MudCardHeader>
+                <MudCardContent>
+                    <MudText Typo="Typo.h3">@_todayDosesCount</MudText>
+                    <MudText Typo="Typo.body2">Scheduled for today</MudText>
+                </MudCardContent>
+            </MudCard>
+        </MudItem>
+    </MudGrid>
+}
+
+@code {
+    private bool _initialized = false;
+    private int _stockCount;
+    private int _lowStockCount;
+    private int _activeSchedulesCount;
+    private int _totalMedications;
+    private int _todayDosesCount;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await LoadDashboardData();
+            _initialized = true;
+            StateHasChanged();
+        }
+    }
+
+
+    private async Task LoadDashboardData()
+    {
+        try
+        {
+            var stocks = await WarehouseService.GetWarehouseStocksAsync();
+            _stockCount = stocks.Count;
+            _lowStockCount = stocks.Count(s => s.IsLowStock);
+
+            var schedules = await ScheduleService.GetSchedulesAsync();
+            _activeSchedulesCount = schedules.Count(s => s.IsActive && !s.IsExpired);
+            _todayDosesCount = schedules.Where(s => s is { IsActive: true, IsExpired: false }).Sum(s => s.TimesPerDay);
+
+            var medications = await MedicationService.GetMedicationsAsync();
+            _totalMedications = medications.Count(m => m.IsActive);
+        }
+        catch
+        {
+            // Handle error
+        }
+    }
+
+}

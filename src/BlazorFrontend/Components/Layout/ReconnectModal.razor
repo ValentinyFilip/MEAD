@@ -1,68 +1,94 @@
 ﻿<script type="module" src="@Assets["Components/Layout/ReconnectModal.razor.js"]"></script>
 
-<dialog id="components-reconnect-modal" data-nosnippet>
-    <MudPaper Elevation="8" Class="pa-4" Style="min-width: 350px;">
+<dialog id="components-reconnect-modal" data-nosnippet
+        style="border: none; border-radius: 4px; padding: 0; backdrop-filter: blur(4px);">
+    <MudPaper Elevation="8" Class="pa-6" Style="min-width: 400px; border-radius: 4px;">
 
         @* First attempt *@
         <div class="components-reconnect-first-attempt-visible">
-            <MudStack Spacing="2" AlignItems="AlignItems.Center">
-                <MudProgressCircular Color="Color.Primary" Indeterminate="true"/>
-                <MudText Typo="Typo.body1">Rejoining the server...</MudText>
+            <MudStack Spacing="3" AlignItems="AlignItems.Center">
+                <MudProgressCircular Color="Color.Primary" Size="Size.Large" Indeterminate="true"/>
+                <MudText Typo="Typo.h6" Align="Align.Center">Reconnecting...</MudText>
+                <MudText Typo="Typo.body2" Color="Color.Secondary" Align="Align.Center">
+                    Attempting to rejoin the server
+                </MudText>
             </MudStack>
         </div>
 
         @* Repeated attempt *@
         <div class="components-reconnect-repeated-attempt-visible">
-            <MudStack Spacing="2" AlignItems="AlignItems.Center">
-                <MudIcon Icon="@Icons.Material.Filled.CloudOff" Color="Color.Warning" Size="Size.Large"/>
-                <MudText Typo="Typo.body1" Align="Align.Center">
-                    Rejoin failed... trying again in <span id="components-seconds-to-next-attempt"></span> seconds.
+            <MudStack Spacing="3" AlignItems="AlignItems.Center">
+                <MudIcon Icon="@Icons.Material.Filled.CloudOff" Color="Color.Warning" Style="font-size: 4rem;"/>
+                <MudText Typo="Typo.h6" Align="Align.Center">
+                    Connection Lost
                 </MudText>
-                <MudProgressCircular Color="Color.Warning" Size="Size.Small" Indeterminate="true"/>
+                <MudText Typo="Typo.body2" Color="Color.Secondary" Align="Align.Center">
+                    Retrying in <span id="components-seconds-to-next-attempt"></span> seconds
+                </MudText>
+                <MudProgressCircular Color="Color.Primary" Size="Size.Small" Indeterminate="true"/>
             </MudStack>
         </div>
 
         @* Failed *@
         <div class="components-reconnect-failed-visible">
-            <MudStack Spacing="2" AlignItems="AlignItems.Center">
-                <MudIcon Icon="@Icons.Material.Filled.SignalWifiOff" Color="Color.Error" Size="Size.Large"/>
-                <MudText Typo="Typo.body1" Align="Align.Center">
-                    Failed to rejoin. Please retry or reload the page.
+            <MudStack Spacing="3" AlignItems="AlignItems.Center">
+                <MudIcon Icon="@Icons.Material.Filled.SignalWifiOff" Color="Color.Error" Style="font-size: 4rem;"/>
+                <MudText Typo="Typo.h6" Align="Align.Center">
+                    Connection Failed
+                </MudText>
+                <MudText Typo="Typo.body2" Color="Color.Secondary" Align="Align.Center">
+                    Unable to reconnect to the server. Please check your internet connection.
                 </MudText>
                 <MudButton
                     id="components-reconnect-button"
                     Variant="Variant.Filled"
                     Color="Color.Primary"
+                    Size="Size.Large"
                     FullWidth="true">
-                    Retry
+                    Retry Connection
                 </MudButton>
             </MudStack>
         </div>
 
         @* Paused *@
         <div class="components-pause-visible">
-            <MudStack Spacing="2" AlignItems="AlignItems.Center">
-                <MudIcon Icon="@Icons.Material.Filled.Pause" Color="Color.Info" Size="Size.Large"/>
-                <MudText Typo="Typo.body1" Align="Align.Center">
-                    The session has been paused by the server.
+            <MudStack Spacing="3" AlignItems="AlignItems.Center">
+                <MudIcon Icon="@Icons.Material.Filled.PauseCircle" Color="Color.Info" Style="font-size: 4rem;"/>
+                <MudText Typo="Typo.h6" Align="Align.Center">
+                    Session Paused
+                </MudText>
+                <MudText Typo="Typo.body2" Color="Color.Secondary" Align="Align.Center">
+                    Your session has been paused by the server.
                 </MudText>
                 <MudButton
                     id="components-resume-button"
                     Variant="Variant.Filled"
                     Color="Color.Primary"
+                    Size="Size.Large"
                     FullWidth="true">
-                    Resume
+                    Resume Session
                 </MudButton>
             </MudStack>
         </div>
 
         @* Resume failed *@
         <div class="components-resume-failed-visible">
-            <MudStack Spacing="2" AlignItems="AlignItems.Center">
-                <MudIcon Icon="@Icons.Material.Filled.ErrorOutline" Color="Color.Error" Size="Size.Large"/>
-                <MudText Typo="Typo.body1" Align="Align.Center">
-                    Failed to resume the session. Please reload the page.
+            <MudStack Spacing="3" AlignItems="AlignItems.Center">
+                <MudIcon Icon="@Icons.Material.Filled.ErrorOutline" Color="Color.Error" Style="font-size: 4rem;"/>
+                <MudText Typo="Typo.h6" Align="Align.Center">
+                    Unable to Resume
                 </MudText>
+                <MudText Typo="Typo.body2" Color="Color.Secondary" Align="Align.Center">
+                    Failed to resume the session. Please reload the page to continue.
+                </MudText>
+                <MudButton
+                    Variant="Variant.Filled"
+                    Color="Color.Primary"
+                    Size="Size.Large"
+                    FullWidth="true"
+                    OnClick="@(() => Navigation.NavigateTo(Navigation.Uri, forceLoad: true))">
+                    Reload Page
+                </MudButton>
             </MudStack>
         </div>
 

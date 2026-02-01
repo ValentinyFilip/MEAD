@@ -1,0 +1,165 @@
+﻿@using BlazorFrontend.Dtos
+@using BlazorFrontend.Dtos.Requests
+@using BlazorFrontend.Services
+@inject MedicationService MedicationService
+@inject WarehouseService WarehouseService
+
+<MudDialog>
+    <DialogContent>
+        <MudStepper @ref="_stepper" Linear="true">
+            <ChildContent>
+                <MudStep Title="Select Medication">
+                    <div class="d-flex flex-column" style="gap: 1rem;">
+                        <MudRadioGroup @bind-Value="_selectedOption">
+                            <MudRadio Value="@("existing")">Select from existing medications</MudRadio>
+                            <MudRadio Value="@("new")">Create new medication</MudRadio>
+                        </MudRadioGroup>
+
+                        @if (_selectedOption == "existing")
+                        {
+                            <MudSelect @bind-Value="_selectedMedicationId" Label="Medication" Variant="Variant.Outlined"
+                                       Required="true">
+                                @foreach (var med in _medications)
+                                {
+                                    <MudSelectItem Value="@med.Id">@med.Name (@med.Form)</MudSelectItem>
+                                }
+                            </MudSelect>
+                        }
+                        else if (_selectedOption == "new")
+                        {
+                            <MudTextField @bind-Value="_newMedication.Name" Label="Name" Variant="Variant.Outlined"
+                                          Required="true"/>
+                            <MudTextField @bind-Value="_newMedication.AlsoKnownAs" Label="Also Known As"
+                                          Variant="Variant.Outlined"/>
+                            <MudTextField @bind-Value="_newMedication.Form" Label="Form" Variant="Variant.Outlined"
+                                          Required="true"/>
+                            <MudNumericField @bind-Value="_newMedication.Strength" Label="Strength"
+                                             Variant="Variant.Outlined" Required="true"/>
+                            <MudTextField @bind-Value="_newMedication.StrengthUnit" Label="Unit"
+                                          Variant="Variant.Outlined" Required="true"/>
+                            <MudTextField @bind-Value="_newMedication.HowToTake" Label="How to Take"
+                                          Variant="Variant.Outlined" Required="true"/>
+                        }
+                    </div>
+                </MudStep>
+
+                <MudStep Title="Stock Details">
+                    <div class="d-flex flex-column" style="gap: 1rem;">
+                        <MudNumericField @bind-Value="_stockModel.HowManyLeft" Label="Quantity"
+                                         Variant="Variant.Outlined" Required="true"/>
+                        <MudTextField @bind-Value="_stockModel.Unit" Label="Unit (pills, bottles, etc.)"
+                                      Variant="Variant.Outlined" Required="true"/>
+                        <MudDatePicker @bind-Date="_expiryDate" Label="Expiry Date" Variant="Variant.Outlined"/>
+                        <MudTextField @bind-Value="_stockModel.BatchNumber" Label="Batch Number"
+                                      Variant="Variant.Outlined"/>
+                        <MudTextField @bind-Value="_stockModel.WhereItsStored" Label="Storage Location"
+                                      Variant="Variant.Outlined"/>
+                        <MudNumericField @bind-Value="_stockModel.WarnWhenBelow" Label="Low Stock Warning Threshold"
+                                         Variant="Variant.Outlined"/>
+                    </div>
+                </MudStep>
+            </ChildContent>
+            <ActionContent>
+                <MudButton OnClick="Cancel">Cancel</MudButton>
+                <MudButton Color="Color.Primary" OnClick="Submit" Disabled="_isSubmitting"
+                           Style="@(_stepper.ActiveIndex == 0 ? "display:none" : "")">
+                    @if (_isSubmitting)
+                    {
+                        <MudProgressCircular Size="Size.Small" Indeterminate="true"/>
+                    }
+                    else
+                    {
+                        <span>Add</span>
+                    }
+                </MudButton>
+            </ActionContent>
+        </MudStepper>
+    </DialogContent>
+</MudDialog>
+
+@code {
+    [CascadingParameter] private IMudDialogInstance MudDialog { get; set; } = null!;
+
+    private MudStepper _stepper = null!;
+    private List<MedicationDto> _medications = new();
+    private string _selectedOption = "existing";
+    private Guid? _selectedMedicationId;
+    private bool _isSubmitting;
+    private DateTime? _expiryDate;
+
+    private NewMedicationModel _newMedication = new();
+    private StockModel _stockModel = new() { WarnWhenBelow = 5 };
+
+    protected override async Task OnInitializedAsync()
+    {
+        _medications = await MedicationService.GetMedicationsAsync();
+    }
+
+    private async Task Submit()
+    {
+        _isSubmitting = true;
+        try
+        {
+            Guid medicationId;
+
+            if (_selectedOption == "new")
+            {
+                var newMed = await MedicationService.CreateMedicationAsync(new CreateMedicationRequest(
+                    _newMedication.Name,
+                    _newMedication.AlsoKnownAs,
+                    _newMedication.Form,
+                    _newMedication.Strength,
+                    _newMedication.StrengthUnit,
+                    _newMedication.HowToTake,
+                    null
+                ));
+                medicationId = newMed!.Id;
+            }
+            else
+            {
+                medicationId = _selectedMedicationId!.Value;
+            }
+
+            await WarehouseService.AddStockAsync(new CreateStockRequest(
+                medicationId,
+                _stockModel.HowManyLeft,
+                _stockModel.Unit,
+                _expiryDate,
+                _stockModel.BatchNumber,
+                _stockModel.WhereItsStored,
+                _stockModel.WarnWhenBelow
+            ));
+
+            MudDialog.Close(DialogResult.Ok(true));
+        }
+        finally
+        {
+            _isSubmitting = false;
+        }
+    }
+
+    private void Cancel()
+    {
+        MudDialog.Cancel();
+    }
+
+    private class NewMedicationModel
+    {
+        public string Name { get; set; } = "";
+        public string? AlsoKnownAs { get; set; }
+        public string Form { get; set; } = "";
+        public decimal Strength { get; set; }
+        public string StrengthUnit { get; set; } = "mg";
+        public string HowToTake { get; set; } = "";
+    }
+
+    private class StockModel
+    {
+        public decimal HowManyLeft { get; set; }
+        public string Unit { get; set; } = "pills";
+        public string? BatchNumber { get; set; }
+        public string? WhereItsStored { get; set; }
+        public decimal WarnWhenBelow { get; set; }
+    }
+
+}

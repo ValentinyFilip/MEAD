@@ -13,12 +13,19 @@ public sealed class AuthenticatedHttpMessageHandler(
         HttpRequestMessage request,
         CancellationToken cancellationToken)
     {
-        // 1. Attach current access token
-        var token = await authState.GetAccessTokenAsync();
-        if (!string.IsNullOrWhiteSpace(token))
+        try
         {
-            request.Headers.Authorization =
-                new AuthenticationHeaderValue("Bearer", token);
+            // 1. Attach current access token
+            var token = await authState.GetAccessTokenAsync();
+            if (!string.IsNullOrWhiteSpace(token))
+            {
+                request.Headers.Authorization =
+                    new AuthenticationHeaderValue("Bearer", token);
+            }
+        }
+        catch (InvalidOperationException)
+        {
+            // JavaScript interop not available during prerendering - continue without token
         }
 
         var response = await base.SendAsync(request, cancellationToken);
@@ -34,16 +41,31 @@ public sealed class AuthenticatedHttpMessageHandler(
         var refreshed = await TryRefreshAsync(cancellationToken);
         if (!refreshed)
         {
-            await authState.ClearAsync();
+            try
+            {
+                await authState.ClearAsync();
+            }
+            catch (InvalidOperationException)
+            {
+                // JavaScript interop not available during prerendering
+            }
+
             return new HttpResponseMessage(HttpStatusCode.Unauthorized);
         }
 
         // 3. Retry request once with new access token
-        token = await authState.GetAccessTokenAsync();
-        if (!string.IsNullOrWhiteSpace(token))
+        try
         {
-            request.Headers.Authorization =
-                new AuthenticationHeaderValue("Bearer", token);
+            var token = await authState.GetAccessTokenAsync();
+            if (!string.IsNullOrWhiteSpace(token))
+            {
+                request.Headers.Authorization =
+                    new AuthenticationHeaderValue("Bearer", token);
+            }
+        }
+        catch (InvalidOperationException)
+        {
+            // JavaScript interop not available during prerendering
         }
 
         var cloned = await CloneRequestAsync(request, cancellationToken);
@@ -52,33 +74,41 @@ public sealed class AuthenticatedHttpMessageHandler(
 
     private async Task<bool> TryRefreshAsync(CancellationToken cancellationToken)
     {
-        var userId = await authState.GetUserIdAsync();
-        if (string.IsNullOrWhiteSpace(userId))
+        try
         {
+            var userId = await authState.GetUserIdAsync();
+            if (string.IsNullOrWhiteSpace(userId))
+            {
+                return false;
+            }
+
+            var client = httpClientFactory.CreateClient("AuthApi");
+
+            var tokenRequest = new TokenRequest
+            {
+                UserId = userId
+            };
+
+            var resp = await client.PostAsJsonAsync("auth/refresh", tokenRequest, cancellationToken);
+            if (!resp.IsSuccessStatusCode)
+            {
+                return false;
+            }
+
+            var payload = await resp.Content.ReadFromJsonAsync<TokenResponse>(cancellationToken: cancellationToken);
+            if (payload is null || string.IsNullOrWhiteSpace(payload.AccessToken))
+            {
+                return false;
+            }
+
+            await authState.SetAuthAsync(payload.UserId, payload.AccessToken);
+            return true;
+        }
+        catch (InvalidOperationException)
+        {
+            // JavaScript interop not available during prerendering
             return false;
         }
-
-        var client = httpClientFactory.CreateClient("AuthApi");
-
-        var tokenRequest = new TokenRequest
-        {
-            UserId = userId
-        };
-
-        var resp = await client.PostAsJsonAsync("auth/refresh", tokenRequest, cancellationToken);
-        if (!resp.IsSuccessStatusCode)
-        {
-            return false;
-        }
-
-        var payload = await resp.Content.ReadFromJsonAsync<TokenResponse>(cancellationToken: cancellationToken);
-        if (payload is null || string.IsNullOrWhiteSpace(payload.AccessToken))
-        {
-            return false;
-        }
-
-        await authState.SetAuthAsync(payload.UserId, payload.AccessToken);
-        return true;
     }
 
     private static async Task<HttpRequestMessage> CloneRequestAsync(

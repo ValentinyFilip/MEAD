@@ -6,47 +6,46 @@
 @inject LocalStorageService Storage
 @inject ISnackbar Snackbar
 
-<MudThemeProvider/>
+<MudThemeProvider Theme="@_theme"/>
 <MudPopoverProvider/>
 <MudDialogProvider/>
 <MudSnackbarProvider/>
 
 <MudLayout>
-    <MudAppBar Elevation="1">
-        <MudIconButton Icon="@Icons.Material.Filled.Menu" Color="Color.Inherit" Edge="Edge.Start"
-                       OnClick="@ToggleDrawer"/>
-        <MudText Typo="Typo.h6">MEAD - Medication Tracker</MudText>
-        <MudSpacer/>
-
-        <MudButton Variant="Variant.Outlined"
-                   Color="Color.Inherit"
-                   StartIcon="@Icons.Material.Filled.Logout"
-                   OnClick="LogoutAsync"
-                   Size="Size.Small">
-            Logout
-        </MudButton>
+    <MudAppBar Elevation="1" Color="Color.Primary">
+        <MudIconButton Icon="@Icons.Material.Filled.Menu"
+                       Color="Color.Inherit"
+                       Edge="Edge.Start"
+                       OnClick="@(() => _drawerOpen = !_drawerOpen)"/>
+        <MudText Typo="Typo.h5" Class="ml-3">Mead</MudText>
     </MudAppBar>
 
-    <MudDrawer @bind-Open="@_drawerOpen" ClipMode="DrawerClipMode.Always" Elevation="2">
+    <MudDrawer @bind-Open="@_drawerOpen"
+               Elevation="2"
+               Color="Color.Surface"
+               ClipMode="DrawerClipMode.Always">
         <MudDrawerHeader>
-            <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2">
-                <MudIcon Icon="@Icons.Material.Filled.Medication" Color="Color.Primary" Size="Size.Large"/>
-                <MudText Typo="Typo.h6">MEAD</MudText>
-            </MudStack>
+            <MudText Typo="Typo.h6">Medication Tracker</MudText>
         </MudDrawerHeader>
-
         <MudNavMenu>
-            <MudNavLink Href="/" Icon="@Icons.Material.Filled.Dashboard" Match="NavLinkMatch.All">Dashboard</MudNavLink>
-            <MudNavLink Href="/medications" Icon="@Icons.Material.Filled.Medication" Match="NavLinkMatch.All">
-                Medications
+            <MudNavLink Href="/" Match="NavLinkMatch.All" Icon="@Icons.Material.Filled.Home">
+                Home
             </MudNavLink>
-            <MudNavLink Href="/schedule" Icon="@Icons.Material.Filled.Schedule" Match="NavLinkMatch.All">Schedule
+            <MudNavLink Href="/warehouse" Match="NavLinkMatch.Prefix" Icon="@Icons.Material.Filled.Inventory">
+                Warehouse
+            </MudNavLink>
+            <MudNavLink Href="/schedules" Match="NavLinkMatch.Prefix" Icon="@Icons.Material.Filled.Schedule">
+                Schedules
+            </MudNavLink>
+            <MudDivider Class="my-2"/>
+            <MudNavLink OnClick="LogoutAsync" Icon="@Icons.Material.Filled.Logout">
+                Logout
             </MudNavLink>
         </MudNavMenu>
     </MudDrawer>
 
-    <MudMainContent>
-        <MudContainer MaxWidth="MaxWidth.Large" Class="mt-4 mb-4">
+    <MudMainContent Class="pt-16 px-16">
+        <MudContainer MaxWidth="MaxWidth.ExtraLarge" Class="my-4">
             @Body
         </MudContainer>
     </MudMainContent>
@@ -61,23 +60,40 @@
 @code {
     private bool _drawerOpen = true;
 
-    void ToggleDrawer()
+    private MudTheme _theme = new()
     {
-        _drawerOpen = !_drawerOpen;
-    }
+        PaletteLight = new PaletteLight
+        {
+            Primary = "#2196F3", // Lighter Blue (Material Blue 500)
+            Secondary = "#64B5F6", // Light Blue
+            AppbarBackground = "#2196F3", // Lighter Blue
+            Background = "#FFFFFF", // White
+            Surface = "#FFFFFF", // White
+            DrawerBackground = "#FFFFFF", // White
+            DrawerText = "rgba(0,0,0,0.87)",
+            DrawerIcon = "rgba(0,0,0,0.54)",
+            AppbarText = "#FFFFFF",
+            TextPrimary = "rgba(0,0,0,0.87)",
+            TextSecondary = "#757575", // Medium Gray for secondary text
+            ActionDefault = "#9E9E9E", // Gray for icons
+            ActionDisabled = "rgba(0,0,0,0.26)",
+            Divider = "#E0E0E0", // Light Gray for dividers
+            Success = "#4CAF50",
+            Info = "#2196F3",
+            Warning = "#FF9800",
+            Error = "#F44336",
+            HoverOpacity = 0.04
+        },
+        LayoutProperties = new LayoutProperties()
+    };
 
     private async Task LogoutAsync()
     {
         try
         {
             var client = HttpClientFactory.CreateClient("AuthApi");
-
-            // POST auth/logout with empty body
             await client.PostAsync("auth/logout", content: null);
-
-            // Clear local auth state (token, userId, etc.)
             await AuthState.ClearAsync();
-
             Snackbar.Add("Logged out successfully", Severity.Success);
         }
         catch (Exception ex)
@@ -85,7 +101,6 @@
             Snackbar.Add("Logout failed. Redirecting anyway...", Severity.Warning);
         }
 
-        // Redirect to login page
         Navigation.NavigateTo("/login", forceLoad: true);
     }
 
