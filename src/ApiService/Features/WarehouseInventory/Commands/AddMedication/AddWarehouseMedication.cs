@@ -44,6 +44,21 @@ public sealed class AddWarehouseMedication(MeadDbContext db)
         };
 
         db.Stocks.Add(stock);
+
+        if (req.HowManyLeft <= req.WarnWhenBelow)
+        {
+            var notification = new Infrastructure.Domain.Notifications.Notification
+            {
+                UserId = userId,
+                Title = "Low Stock Alert",
+                Message = $"Medication '{med.Name}' is running low ({req.HowManyLeft} {req.Unit} remaining).",
+                Type = Infrastructure.Domain.Notifications.Enums.NotificationType.LowStock,
+                RelatedEntityId = stock.Id,
+                CreatedAt = DateTime.UtcNow
+            };
+            db.Notifications.Add(notification);
+        }
+
         await db.SaveChangesAsync(ct);
 
         var response = new WarehouseMedicationDetailResponse(

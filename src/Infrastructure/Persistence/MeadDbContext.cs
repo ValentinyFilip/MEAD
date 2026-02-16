@@ -1,6 +1,8 @@
 ﻿using Infrastructure.Domain.Auth;
 using Infrastructure.Domain.Medications;
 using Infrastructure.Domain.Medications.Configuration;
+using Infrastructure.Domain.Notifications;
+using Infrastructure.Domain.Notifications.Configuration;
 using Infrastructure.Domain.User;
 using Microsoft.EntityFrameworkCore;
 
@@ -17,6 +19,7 @@ public class MeadDbContext : DbContext
     public DbSet<Medication> Medications { get; set; }
     public DbSet<MedicationSchedule> MedicationSchedules { get; set; }
     public DbSet<Stock> Stocks { get; set; }
+    public DbSet<Notification> Notifications { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -27,5 +30,6 @@ public class MeadDbContext : DbContext
         modelBuilder.ApplyConfiguration(new MedicationConfiguration());
         modelBuilder.ApplyConfiguration(new MedicationScheduleConfiguration());
         modelBuilder.ApplyConfiguration(new StockConfiguration());
+        modelBuilder.ApplyConfiguration(new NotificationConfiguration());
     }
 }
